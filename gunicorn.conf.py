@@ -1,7 +1,9 @@
-# gunicorn.conf.py — Nemvai Production (OWASP + Secure)
+# gunicorn.conf.py — Nemvai Production (OWASP + Secure + Render Ready)
+import os
 import multiprocessing
 
-bind = "0.0.0.0:8000"
+# Render وغيره يمرر PORT عبر متغير البيئة — نستخدمه وإلا 8000 محلياً
+bind = f"0.0.0.0:{os.getenv('PORT', '8000')}"
 workers = multiprocessing.cpu_count() * 2 + 1
 worker_class = "sync"
 timeout = 30
