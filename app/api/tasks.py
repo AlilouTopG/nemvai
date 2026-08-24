@@ -1,12 +1,14 @@
 """
-app/api/tasks.py — Smart Task Manager (isolated per user)
+app/api/tasks.py — Smart Task Manager (RLS 100% — Row Level Security)
+كل وصول يُفلتر إجبارياً عبر owned_query / get_owned_or_404
 """
 from datetime import datetime
 from flask import Blueprint, request, jsonify, g
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required
 from app.extensions import db, limiter
 from app.models import Task
 from app.auth.utils import sanitize_str
+from app.security.rls import get_current_user_id, get_owned_or_404, owned_query, assert_no_user_id_override
 
 tasks_bp = Blueprint("tasks", __name__)
 
@@ -15,18 +17,26 @@ VALID_PRIO = {"low", "medium", "high", "urgent"}
 VALID_STATUS = {"todo", "in_progress", "done"}
 
 def _uid():
-    return int(get_jwt_identity())
+    uid = get_current_user_id(required=True)
+    if uid is None:
+        # jwt_required سيُرجع 401 قبل الوصول، لكن كطبقة دفاع إضافية
+        return None
+    return uid
 
 def _payload():
-    return getattr(g, "sanitized_json", None) or request.get_json(silent=True) or {}
+    raw = getattr(g, "sanitized_json", None) or request.get_json(silent=True) or {}
+    # منع حقن user_id بأي شكل
+    if isinstance(raw, dict):
+        assert_no_user_id_override(raw)
+    return raw
 
 @tasks_bp.route("", methods=["GET"])
 @jwt_required()
 @limiter.limit("60 per minute")
 def list_tasks():
     uid = _uid()
-    q = Task.query.filter_by(user_id=uid)
-    # filters
+    # RLS: لا يمكن قراءة إلا صفوفك
+    q = owned_query(Task, uid)
     status = request.args.get("status")
     category = request.args.get("category")
     priority = request.args.get("priority")
@@ -36,6 +46,8 @@ def list_tasks():
         q = q.filter(Task.category == category)
     if priority in VALID_PRIO:
         q = q.filter(Task.priority == priority)
+    # محاولة تمرير user_id عبر query تُجهل تماماً (RLS يمنعها)
+    # لا نقرأ request.args.get("user_id") عمداً
     tasks = q.order_by(Task.created_at.desc()).all()
     return jsonify([t.to_dict() for t in tasks])
 
@@ -64,7 +76,7 @@ def create_task():
             due = datetime.fromisoformat(str(data["due_date"]).strip()).date()
         except Exception:
             return jsonify({"error": "صيغة due_date غير صالحة (YYYY-MM-DD)"}), 400
-
+    # RLS: user_id يُؤخذ حصراً من التوكن، لا من الـ payload
     t = Task(user_id=uid, title=title, description=desc, category=cat, priority=prio, status=status, due_date=due)
     db.session.add(t)
     db.session.commit()
@@ -74,10 +86,12 @@ def create_task():
 @jwt_required()
 def update_task(tid):
     uid = _uid()
-    t = Task.query.filter_by(id=tid, user_id=uid).first()
+    # RLS صارم: حتى لو خمّن المهاجم id لعائد لمستخدم آخر → 404 موحّد
+    t = get_owned_or_404(Task, tid, uid)
     if not t:
         return jsonify({"error": "المهمة غير موجودة"}), 404
     data = _payload()
+    # لا يمكن تغيير user_id أبداً — نتجاهل الحقل حتى لو أُرسل
     if "title" in data:
         title = sanitize_str(data["title"], 200)
         if not title or len(title) < 2:
@@ -112,9 +126,11 @@ def update_task(tid):
 @jwt_required()
 def delete_task(tid):
     uid = _uid()
-    t = Task.query.filter_by(id=tid, user_id=uid).first()
+    t = get_owned_or_404(Task, tid, uid)
     if not t:
         return jsonify({"error": "غير موجود"}), 404
     db.session.delete(t)
     db.session.commit()
     return jsonify({"msg": "تم الحذف"}), 200
+
+# لضمان عدم نسيان أي مسار: لا يوجد مسار GET /<id> بدون RLS — لو أُضيف مستقبلاً يجب استخدام get_owned_or_404

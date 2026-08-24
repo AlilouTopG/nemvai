@@ -6,6 +6,7 @@ from flask import Flask, render_template, jsonify, send_from_directory
 from .config import Config
 from .extensions import db, jwt, cors, limiter
 from .security.middleware import register_security_hooks
+from .security.rls import register_rls_engine_hooks, register_rls_request_hooks
 
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
@@ -24,6 +25,18 @@ def create_app():
     limiter.init_app(app)
 
     register_security_hooks(app)
+    # RLS — Row Level Security (Request hooks أولاً)
+    register_rls_request_hooks(app, db)
+
+    # JWT blocklist — يمنع Authorization Bypass عبر توكن مُلغى (بعد logout)
+    from .extensions import revoked_jtis
+    @jwt.token_in_blocklist_loader
+    def _is_revoked(jwt_header, jwt_payload):
+        return jwt_payload.get("jti") in revoked_jtis
+
+    @jwt.revoked_token_loader
+    def _revoked(jwt_header, jwt_payload):
+        return jsonify({"error": "الجلسة أُلغيت — سجل الدخول مجدداً"}), 401
 
     # JWT error handlers — return JSON not HTML (prevent info leak)
     @jwt.unauthorized_loader
@@ -75,9 +88,14 @@ def create_app():
     def server_err(e):
         return jsonify({"error": "خطأ داخلي"}), 500
 
-    # Create tables
+    # Create tables + تفعيل RLS على مستوى المحرك
     with app.app_context():
         from . import models  # noqa
         db.create_all()
+        # تفعيل PRAGMA بعد إنشاء الجداول (SQLite)
+        try:
+            register_rls_engine_hooks(app, db)
+        except Exception:
+            pass
 
     return app

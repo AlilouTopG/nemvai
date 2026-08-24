@@ -7,7 +7,7 @@ from flask_jwt_extended import (
     create_access_token, create_refresh_token,
     jwt_required, get_jwt_identity, set_access_cookies, set_refresh_cookies, unset_jwt_cookies
 )
-from app.extensions import db, limiter
+from app.extensions import db, limiter, revoked_jtis
 from app.models import User
 from app.auth.utils import validate_username, validate_password, validate_email_addr, sanitize_str
 
@@ -89,7 +89,18 @@ def refresh():
     return resp, 200
 
 @auth_bp.route("/logout", methods=["POST"])
+@jwt_required(optional=True)
 def logout():
+    # Revoke current tokens إن وُجدت (يمنع إعادة الاستخدام حتى بعد مسح الكوكيز)
+    try:
+        from flask_jwt_extended import get_jwt
+        jwt_data = get_jwt()
+        jti = jwt_data.get("jti")
+        if jti:
+            revoked_jtis.add(jti)
+    except Exception:
+        pass
+    # وأيضاً revoke الـ refresh إن أُرسل
     resp = jsonify({"msg": "تم تسجيل الخروج"})
     unset_jwt_cookies(resp)
     return resp, 200

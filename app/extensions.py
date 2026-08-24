@@ -10,6 +10,8 @@ from flask_cors import CORS
 db = SQLAlchemy()
 jwt = JWTManager()
 cors = CORS()
+# JWT blocklist — يمنع استخدام التوكن بعد logout (حتى انتهاء صلاحيته)
+revoked_jtis = set()
 limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["60 per minute"],
