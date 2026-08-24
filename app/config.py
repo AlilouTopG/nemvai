@@ -47,4 +47,4 @@ class Config:
     RATELIMIT_STORAGE_URI = "memory://"
 
     # App
-    APP_NAME = os.getenv("APP_NAME", "ArenaX Productivity Hub")
+    APP_NAME = os.getenv("APP_NAME", "Nemvai")
