@@ -17,7 +17,21 @@
   --radius:18px;
   --shadow:0 20px 60px rgba(0,0,0,.45), 0 2px 10px rgba(124,58,237,.15);
 }
+[data-theme="light"]{
+  --bg:#f6f7fb;
+  --bg2:#ffffff;
+  --card:#ffffff;
+  --card2:#f0f0f5;
+  --border:#e2e2ea;
+  --text:#101018;
+  --muted:#6b7280;
+  --primary:#7c3aed;
+  --primary2:#6d28d9;
+  --accent:#059669;
+  --shadow:0 10px 30px rgba(0,0,0,.08), 0 2px 8px rgba(124,58,237,.08);
+}
 *{box-sizing:border-box}
+html{transition:background .25s, color .25s}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Cairo','Inter',system-ui,sans-serif;min-height:100%}
 a{color:var(--primary2);text-decoration:none}
 a:hover{text-decoration:underline}
@@ -31,7 +45,9 @@ button,input,select,textarea{font-family:inherit}
   backdrop-filter:blur(16px);
   background:rgba(10,10,15,.75);
   border-bottom:1px solid var(--border);
+  transition:background .25s, border-color .25s;
 }
+[data-theme="light"] .nav{ background:rgba(255,255,255,.82); }
 .nav-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 24px}
 .brand{display:flex;align-items:center;gap:12px;font-weight:900;letter-spacing:.5px}
 .brand .logo{
@@ -112,6 +128,19 @@ label{font-size:.85rem;color:var(--muted);display:block;margin:6px 0 6px 2px}
 /* Toast */
 #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#11111a;border:1px solid var(--border);padding:12px 16px;border-radius:12px;box-shadow:var(--shadow);display:none;z-index:99;font-weight:700}
 #toast.show{display:block}
+[data-theme="light"] #toast{ background:#ffffff; }
+
+/* i18n + Theme switchers — clean header widgets */
+.lang-switch{display:flex;gap:4px;align-items:center;background:var(--card);border:1px solid var(--border);padding:4px;border-radius:999px}
+.lang-btn{padding:6px 10px;border-radius:999px;border:1px solid transparent;background:transparent;color:var(--muted);font-weight:800;font-size:.75rem;cursor:pointer;transition:.15s}
+.lang-btn.btn-primary{background:linear-gradient(135deg,var(--primary),#5b21b6);color:#fff;border-color:transparent}
+#themeToggle{width:40px;height:40px;border-radius:999px;display:grid;place-items:center;font-size:1.1rem}
+
+/* Inputs light */
+[data-theme="light"] .input,[data-theme="light"] select,[data-theme="light"] textarea{ background:#ffffff; color:var(--text); }
+[data-theme="light"] .task,[data-theme="light"] .habit{ background:#ffffff; }
+[data-theme="light"] .card{ background:linear-gradient(180deg,#ffffff,#f9f9ff); }
+[data-theme="light"] .badge{ background:#ffffff; }
 
 /* Scrollbar */
 ::-webkit-scrollbar{width:8px;height:8px}

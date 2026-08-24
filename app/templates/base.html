@@ -6,21 +6,33 @@
 <title>{% block title %}Nemvai{% endblock %}</title>
 <link rel="stylesheet" href="/static/css/main.css">
 {% block head %}{% endblock %}
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="dark light">
+<script>
+// Early theme apply — prevents flash, CSP allows unsafe-inline
+(function(){try{const k='nemvai_theme';const s=localStorage.getItem(k);const t=s||(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',t);document.documentElement.style.colorScheme=t;}catch(e){}})();
+</script>
+<script src="/static/js/theme.js"></script>
+<script src="/static/js/i18n.js"></script>
 </head>
 <body>
 <nav class="nav">
   <div class="nav-inner">
     <div class="brand">
       <div class="logo">NV</div>
-      <div><span>Nemvai</span><small id="userLine">... جاري التحقق</small></div>
+      <div><span>Nemvai</span><small id="userLine" data-i18n="nav.checking">... جاري التحقق</small></div>
     </div>
-    <div class="nav-actions" style="gap:6px;flex-wrap:wrap">
-      <a class="btn {% if request.path.startswith('/todos') or request.path=='/' %}btn-primary{% else %}btn-ghost{% endif %}" href="/todos">📋 المهام</a>
-      <a class="btn {% if request.path.startswith('/calendar') %}btn-primary{% else %}btn-ghost{% endif %}" href="/calendar">🗓️ التقويم</a>
-      <a class="btn {% if request.path.startswith('/habits') %}btn-primary{% else %}btn-ghost{% endif %}" href="/habits">🔥 العادات</a>
-      <button class="btn btn-ghost" onclick="refreshAll&&refreshAll()">تحديث</button>
-      <button class="btn btn-danger" onclick="logout()">خروج</button>
+    <div class="nav-actions" style="gap:6px;flex-wrap:wrap;align-items:center">
+      <a class="btn {% if request.path.startswith('/todos') or request.path=='/' %}btn-primary{% else %}btn-ghost{% endif %}" href="/todos" data-i18n="nav.todos">📋 المهام</a>
+      <a class="btn {% if request.path.startswith('/calendar') %}btn-primary{% else %}btn-ghost{% endif %}" href="/calendar" data-i18n="nav.calendar">🗓️ التقويم</a>
+      <a class="btn {% if request.path.startswith('/habits') %}btn-primary{% else %}btn-ghost{% endif %}" href="/habits" data-i18n="nav.habits">🔥 العادات</a>
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
+        <button class="lang-btn" data-lang="fr" onclick="setLang('fr')">FR</button>
+        <button class="lang-btn" data-lang="ar" onclick="setLang('ar')">AR</button>
+      </div>
+      <button id="themeToggle" class="btn btn-ghost" title="Toggle theme" aria-label="Theme">🌙</button>
+      <button class="btn btn-ghost" onclick="refreshAll&&refreshAll()" data-i18n="nav.refresh">تحديث</button>
+      <button class="btn btn-danger" onclick="logout()" data-i18n="nav.logout">خروج</button>
     </div>
   </div>
 </nav>

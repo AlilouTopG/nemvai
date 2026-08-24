@@ -6,7 +6,7 @@ async function loadSuggestions(){
     box.replaceChildren();
     if(!data.length){
       const empty=document.createElement("div");
-      empty.className="muted"; empty.textContent="لا اقتراحات حالياً — أنت على المسار الصحيح ✨";
+      empty.className="muted"; empty.textContent=t("todos.suggestionsEmpty");
       empty.style.padding="12px"; empty.style.textAlign="center";
       box.appendChild(empty); return;
     }
@@ -36,7 +36,7 @@ async function loadSuggestions(){
     });
   }catch(e){
     box.replaceChildren();
-    const err=document.createElement("div"); err.className="muted"; err.textContent="تعذر تحميل الاقتراحات";
+    const err=document.createElement("div"); err.className="muted"; err.textContent=t("todos.suggestionsError");
     err.style.padding="10px"; box.appendChild(err);
   }
 }
@@ -53,17 +53,17 @@ async function loadTasks(extra={}){
   const tasks= await api(`/api/tasks${q}`);
   const list=document.getElementById("tasksList");
   list.replaceChildren();
-  // stats
+  // stats — Latin numerals enforced via fmtNum inside t()
   const total=tasks.length, done=tasks.filter(t=>t.status==="done").length;
-  document.getElementById("todosStats").textContent = `${total} مهمة • ${done} مكتملة • ${total-done} متبقية`;
+  document.getElementById("todosStats").textContent = t("todos.stats", {total, done, left: total-done});
   let filtered=tasks;
   if(extra.overdue){
     const today=new Date().toISOString().slice(0,10);
     filtered=tasks.filter(t=> t.due_date && t.due_date < today && t.status!=="done");
-    if(!filtered.length){ const empty=document.createElement("div"); empty.className="muted"; empty.textContent="لا مهام متأخرة 🎉"; empty.style.textAlign="center"; empty.style.padding="12px"; list.appendChild(empty); return; }
+    if(!filtered.length){ const empty=document.createElement("div"); empty.className="muted"; empty.textContent=t("todos.noOverdue"); empty.style.textAlign="center"; empty.style.padding="12px"; list.appendChild(empty); return; }
   }
   if(!filtered.length){
-    const empty=document.createElement("div"); empty.className="muted"; empty.textContent="لا مهام — أضف أول مهمة ✨"; empty.style.textAlign="center"; empty.style.padding="12px"; list.appendChild(empty); return;
+    const empty=document.createElement("div"); empty.className="muted"; empty.textContent=t("todos.empty"); empty.style.textAlign="center"; empty.style.padding="12px"; list.appendChild(empty); return;
   }
   filtered.forEach(t=>{
     const row=document.createElement("div"); row.className="task"+(t.status==="done"?" done":"");
@@ -71,16 +71,22 @@ async function loadTasks(extra={}){
     const h4=document.createElement("h4"); h4.textContent=t.title;
     const p=document.createElement("p"); p.textContent=t.description||"—";
     const meta=document.createElement("div"); meta.style.display="flex"; meta.style.gap="6px"; meta.style.marginTop="6px"; meta.style.flexWrap="wrap";
-    const badgeP=document.createElement("span"); badgeP.className="badge badge-"+t.priority; badgeP.textContent={low:"منخفض",medium:"متوسط",high:"مرتفع",urgent:"عاجل"}[t.priority]||t.priority;
-    const badgeC=document.createElement("span"); badgeC.className="badge"; badgeC.textContent={work:"عمل",personal:"شخصي",study:"دراسة",health:"صحة",other:"أخرى"}[t.category]||t.category;
+    const badgeP=document.createElement("span"); badgeP.className="badge badge-"+t.priority;
+    const prioKey={low:"todos.priorityLow",medium:"todos.priorityMedium",high:"todos.priorityHigh",urgent:"todos.priorityUrgent"}[t.priority]||t.priority;
+    badgeP.textContent=t(prioKey);
+    const badgeC=document.createElement("span"); badgeC.className="badge";
+    const catKey={work:"todos.catWork",personal:"todos.catPersonal",study:"todos.catStudy",health:"todos.catHealth",other:"todos.catOther"}[t.category]||t.category;
+    badgeC.textContent=t(catKey);
     meta.append(badgeP,badgeC);
-    if(t.due_date){ const b=document.createElement("span"); b.className="badge"; b.textContent="📅 "+t.due_date; meta.append(b); }
+    if(t.due_date){ const b=document.createElement("span"); b.className="badge"; b.textContent="📅 "+fmtDateLatin(t.due_date); meta.append(b); }
     left.append(h4,p,meta);
     const actions=document.createElement("div"); actions.className="task-actions";
     const sel=document.createElement("select"); sel.className="select-sm";
-    [["todo","انتظار"],["in_progress","تنفيذ"],["done","مكتمل"]].forEach(([v,l])=>{ const o=document.createElement("option"); o.value=v; o.textContent=l; if(v===t.status) o.selected=true; sel.appendChild(o); });
+    [["todo",t("todos.statusTodo")],["in_progress",t("todos.statusInProgress")],["done",t("todos.statusDone")]].forEach(([v,l])=>{ const o=document.createElement("option"); o.value=v; o.textContent=l; if(v===t.status) o.selected=true; sel.appendChild(o); });
     sel.onchange=()=> updateTask(t.id,{status:sel.value});
-    const del=document.createElement("button"); del.className="btn btn-ghost"; del.textContent="حذف"; del.onclick=()=> deleteTask(t.id);
+    const del=document.createElement("button"); del.className="btn btn-ghost";
+    del.textContent = currentLang==="en" ? "Delete" : currentLang==="fr" ? "Supprimer" : "حذف";
+    del.onclick=()=> deleteTask(t.id);
     actions.append(sel,del);
     row.append(left,actions);
     list.appendChild(row);
@@ -89,9 +95,10 @@ async function loadTasks(extra={}){
 async function createTask(e){
   e.preventDefault();
   const payload={ title: document.getElementById("t_title").value.trim(), description: document.getElementById("t_desc").value.trim(), category: document.getElementById("t_cat").value, priority: document.getElementById("t_prio").value, due_date: document.getElementById("t_due").value || null };
-  try{ await api("/api/tasks",{method:"POST", body: JSON.stringify(payload)}); e.target.reset(); toast("تمت إضافة المهمة ✅"); loadTasks(); loadSuggestions(); }catch(err){ toast(err.message,false); }
+  try{ await api("/api/tasks",{method:"POST", body: JSON.stringify(payload)}); e.target.reset(); toast(t("todos.added")); loadTasks(); loadSuggestions(); }catch(err){ toast(err.message,false); }
 }
-async function updateTask(id,patch){ try{ await api(`/api/tasks/${id}`,{method:"PATCH", body: JSON.stringify(patch)}); toast("تم التحديث"); loadTasks(); loadSuggestions(); }catch(err){ toast(err.message,false); } }
-async function deleteTask(id){ if(!confirm("حذف المهمة؟"))return; try{ await api(`/api/tasks/${id}`,{method:"DELETE"}); toast("تم الحذف"); loadTasks(); loadSuggestions(); }catch(err){ toast(err.message,false); } }
+async function updateTask(id,patch){ try{ await api(`/api/tasks/${id}`,{method:"PATCH", body: JSON.stringify(patch)}); toast(t("todos.updated")); loadTasks(); loadSuggestions(); }catch(err){ toast(err.message,false); } }
+async function deleteTask(id){ if(!confirm(t("todos.deleteConfirm")))return; try{ await api(`/api/tasks/${id}`,{method:"DELETE"}); toast(t("todos.deleted")); loadTasks(); loadSuggestions(); }catch(err){ toast(err.message,false); } }
 function refreshAll(){ loadTasks(); loadSuggestions(); }
+window.onLangChange = ()=>{ loadTasks(); loadSuggestions(); };
 loadSuggestions(); loadTasks();

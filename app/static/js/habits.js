@@ -1,19 +1,19 @@
-// Nemvai — Habits Rich Page (RLS, XSS-safe)
+// Nemvai — Habits Rich Page (RLS, XSS-safe, Latin numerals)
 async function loadStats(){
   const s= await api("/api/habits/stats");
-  document.getElementById("st_total").textContent=s.total;
-  document.getElementById("st_today").textContent=s.completed_today;
-  document.getElementById("st_avg").textContent=s.avg_streak;
-  document.getElementById("st_best").textContent=s.best_streak+" 🔥";
-  document.getElementById("st_rate").textContent=s.completion_rate+"%";
-  document.getElementById("st_logs").textContent=s.total_logs;
+  document.getElementById("st_total").textContent=fmtNum(s.total);
+  document.getElementById("st_today").textContent=fmtNum(s.completed_today);
+  document.getElementById("st_avg").textContent=fmtNum(s.avg_streak);
+  document.getElementById("st_best").textContent=fmtNum(s.best_streak)+" 🔥";
+  document.getElementById("st_rate").textContent=fmtNum(s.completion_rate)+"%";
+  document.getElementById("st_logs").textContent=fmtNum(s.total_logs);
 }
 async function loadHabits(){
   const habits= await api("/api/habits");
   const list=document.getElementById("habitsList");
   list.replaceChildren();
   if(!habits.length){
-    const empty=document.createElement("div"); empty.className="muted"; empty.textContent="لا عادات بعد — ابدأ بعادة واحدة يومية"; empty.style.textAlign="center"; empty.style.padding="12px"; list.appendChild(empty); return;
+    const empty=document.createElement("div"); empty.className="muted"; empty.textContent=t("habits.empty"); empty.style.textAlign="center"; empty.style.padding="12px"; list.appendChild(empty); return;
   }
   for(const h of habits){
     const card=document.createElement("div"); card.className="habit-detailed";
@@ -24,16 +24,16 @@ async function loadHabits(){
     const desc=document.createElement("div"); desc.className="muted"; desc.style.fontSize=".8rem"; desc.textContent=h.description||"—";
     info.append(name,desc);
     const streak=document.createElement("div"); streak.style.textAlign="center";
-    const b=document.createElement("b"); b.textContent=(h.streak||0)+" 🔥"; b.style.fontSize="1.1rem";
-    const span=document.createElement("span"); span.className="muted"; span.style.fontSize=".7rem"; span.textContent=h.completed_today?"مكتملة اليوم":"غير مكتملة";
+    const b=document.createElement("b"); b.textContent=fmtNum(h.streak||0)+" 🔥"; b.style.fontSize="1.1rem";
+    const span=document.createElement("span"); span.className="muted"; span.style.fontSize=".7rem"; span.textContent=h.completed_today?t("habits.completedToday"):t("habits.notCompleted");
     streak.append(b,span);
-    const check=document.createElement("button"); check.className="check"+(h.completed_today?" done":""); check.textContent=h.completed_today?"✓":"○"; check.title="تبديل اليوم"; check.onclick=()=> toggleHabit(h.id);
+    const check=document.createElement("button"); check.className="check"+(h.completed_today?" done":""); check.textContent=h.completed_today?"✓":"○"; check.title=t("habits.completedToday"); check.onclick=()=> toggleHabit(h.id);
     const del=document.createElement("button"); del.className="btn btn-ghost"; del.textContent="✕"; del.onclick=()=> deleteHabit(h.id);
     const actions=document.createElement("div"); actions.style.display="flex"; actions.style.gap="8px"; actions.style.alignItems="center"; actions.append(check,del);
     top.append(iconBox,info,streak,actions);
     // meta + logs preview (آخر 14 يوم)
     const meta=document.createElement("div"); meta.className="habit-meta";
-    const badge1=document.createElement("span"); badge1.className="badge"; badge1.textContent=`سلسلة ${h.streak}`;
+    const badge1=document.createElement("span"); badge1.className="badge"; badge1.textContent=`${t("habits.streak")} ${fmtNum(h.streak)}`;
     const badge2=document.createElement("span"); badge2.className="badge"; badge2.textContent=`${h.color}`;
     meta.append(badge1,badge2);
     // mini heatmap
@@ -55,9 +55,10 @@ async function loadHabits(){
 async function createHabit(e){
   e.preventDefault();
   const payload={ name: document.getElementById("h_name").value.trim(), description: document.getElementById("h_desc").value.trim(), icon: document.getElementById("h_icon").value.trim()||"🔥", color: document.getElementById("h_color").value };
-  try{ await api("/api/habits",{method:"POST", body: JSON.stringify(payload)}); e.target.reset(); document.getElementById("h_icon").value="🔥"; document.getElementById("h_color").value="#8b5cf6"; toast("تمت إضافة العادة 🔥"); loadStats(); loadHabits(); }catch(err){ toast(err.message,false); }
+  try{ await api("/api/habits",{method:"POST", body: JSON.stringify(payload)}); e.target.reset(); document.getElementById("h_icon").value="🔥"; document.getElementById("h_color").value="#8b5cf6"; toast(t("habits.added")); loadStats(); loadHabits(); }catch(err){ toast(err.message,false); }
 }
-async function toggleHabit(id){ try{ await api(`/api/habits/${id}/toggle`,{method:"POST", body: JSON.stringify({})}); toast("تم التحديث"); loadStats(); loadHabits(); }catch(err){ toast(err.message,false); } }
-async function deleteHabit(id){ if(!confirm("حذف العادة؟"))return; try{ await api(`/api/habits/${id}`,{method:"DELETE"}); toast("تم الحذف"); loadStats(); loadHabits(); }catch(err){ toast(err.message,false); } }
+async function toggleHabit(id){ try{ await api(`/api/habits/${id}/toggle`,{method:"POST", body: JSON.stringify({})}); toast(t("habits.updated")); loadStats(); loadHabits(); }catch(err){ toast(err.message,false); } }
+async function deleteHabit(id){ if(!confirm(t("habits.deleteConfirm")))return; try{ await api(`/api/habits/${id}`,{method:"DELETE"}); toast(t("habits.deleted")); loadStats(); loadHabits(); }catch(err){ toast(err.message,false); } }
 function refreshAll(){ loadStats(); loadHabits(); }
+window.onLangChange = ()=>{ loadStats(); loadHabits(); };
 loadStats(); loadHabits();
