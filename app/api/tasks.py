@@ -137,12 +137,11 @@ def delete_task(tid):
 @jwt_required()
 @limiter.limit("60 per minute")
 def task_suggestions():
-    """Smart Suggestions — compact elegant recommendations (RLS آمن)"""
+    """Smart Suggestions — dynamic i18n keys (RLS آمن، لا نصوص ثابتة)"""
     uid = _uid()
     tasks = owned_query(Task, uid).all()
     from datetime import date
     today = date.today()
-    # تحليل سياقي آمن — لا يكشف بيانات مستخدم آخر
     total = len(tasks)
     overdue = [t for t in tasks if t.due_date and t.due_date < today and t.status != "done"]
     high_todo = [t for t in tasks if t.priority in ("high", "urgent") and t.status == "todo"]
@@ -151,15 +150,17 @@ def task_suggestions():
 
     suggestions = []
 
-    # 1) overdue
+    # 1) overdue — يرسل مفاتيح فقط
     if overdue:
         suggestions.append({
             "id": "overdue",
             "type": "urgent",
             "icon": "⚠️",
-            "title": f"لديك {len(overdue)} مهام متأخرة",
-            "reason": "ركز على المهام ذات التواريخ المتجاوزة أولاً",
-            "action": {"label": "عرض المتأخرة", "filter": "overdue", "priority": "urgent"}
+            "titleKey": "suggestions.overdue.title",
+            "titleParams": {"count": len(overdue)},
+            "reasonKey": "suggestions.overdue.reason",
+            "reasonParams": {},
+            "action": {"labelKey": "suggestions.overdue.action", "filter": "overdue", "priority": "urgent"}
         })
     # 2) high priority
     if len(high_todo) >= 2:
@@ -167,29 +168,35 @@ def task_suggestions():
             "id": "high",
             "type": "priority",
             "icon": "🔥",
-            "title": f"{len(high_todo)} مهام عالية الأولوية بانتظارك",
-            "reason": "ابدأ بالأهم — قاعدة 80/20",
-            "action": {"label": "تركيز عالي", "filter": "high", "priority": "high"}
+            "titleKey": "suggestions.high.title",
+            "titleParams": {"count": len(high_todo)},
+            "reasonKey": "suggestions.high.reason",
+            "reasonParams": {},
+            "action": {"labelKey": "suggestions.high.action", "filter": "high", "priority": "high"}
         })
-    # 3) فارغ
+    # 3) فارغ — اقتراحات بداية
     if total == 0:
         suggestions.append({
             "id": "starter",
             "type": "starter",
             "icon": "✨",
-            "title": "ابدأ بيومك — 3 مهام مقترحة",
-            "reason": "قوالب جاهزة للإضافة السريعة",
-            "action": {"label": "إضافة: تخطيط الصباح", "title": "تخطيط الصباح • مراجعة الأهداف", "category": "personal", "priority": "high"}
+            "titleKey": "suggestions.starter.title",
+            "titleParams": {},
+            "reasonKey": "suggestions.starter.reason",
+            "reasonParams": {},
+            "action": {"labelKey": "suggestions.starter.action", "titleKey": "suggestions.starter.taskTitle", "category": "personal", "priority": "high"}
         })
         suggestions.append({
             "id": "quick_health",
             "type": "quick",
             "icon": "💪",
-            "title": "اقتراح سريع: صحة",
-            "reason": "عادة صغيرة تصنع فرقاً",
-            "action": {"label": "إضافة: مشي 15 دقيقة", "title": "مشي 15 دقيقة", "category": "health", "priority": "medium"}
+            "titleKey": "suggestions.quick_health.title",
+            "titleParams": {},
+            "reasonKey": "suggestions.quick_health.reason",
+            "reasonParams": {},
+            "action": {"labelKey": "suggestions.quick_health.action", "titleKey": "suggestions.quick_health.taskTitle", "category": "health", "priority": "medium"}
         })
-    # 4) وقت اليوم
+    # 4) وقت اليوم — سياقي
     import datetime as dt
     hour = dt.datetime.now().hour
     if 5 <= hour < 12 and todo:
@@ -197,18 +204,22 @@ def task_suggestions():
             "id": "morning",
             "type": "context",
             "icon": "🌅",
-            "title": "صباح الإنتاجية",
-            "reason": "خصص أول ساعتين لأهم مهمة",
-            "action": {"label": "إضافة: تركيز عميق 50د", "title": "تركيز عميق — بدون مشتتات", "category": "work", "priority": "high"}
+            "titleKey": "suggestions.morning.title",
+            "titleParams": {},
+            "reasonKey": "suggestions.morning.reason",
+            "reasonParams": {},
+            "action": {"labelKey": "suggestions.morning.action", "titleKey": "suggestions.morning.taskTitle", "category": "work", "priority": "high"}
         })
     elif 18 <= hour < 23 and total:
         suggestions.append({
             "id": "evening",
             "type": "context",
             "icon": "🌙",
-            "title": "مراجعة مسائية",
-            "reason": "راجع ما أنجزت وخطط للغد",
-            "action": {"label": "إضافة: مراجعة يومية", "title": "مراجعة يومية — 3 إنجازات", "category": "personal", "priority": "medium"}
+            "titleKey": "suggestions.evening.title",
+            "titleParams": {},
+            "reasonKey": "suggestions.evening.reason",
+            "reasonParams": {},
+            "action": {"labelKey": "suggestions.evening.action", "titleKey": "suggestions.evening.taskTitle", "category": "personal", "priority": "medium"}
         })
     # 5) إنجاز
     if total > 0 and len(done) / total >= 0.8:
@@ -216,11 +227,14 @@ def task_suggestions():
             "id": "celebrate",
             "type": "success",
             "icon": "🎉",
-            "title": "أداء رائع — 80% مكتمل",
-            "reason": "كافئ نفسك وأضف مراجعة أسبوعية",
-            "action": {"label": "إضافة: مراجعة أسبوعية", "title": "مراجعة أسبوعية — دروس الأسبوع", "category": "work", "priority": "medium"}
+            "titleKey": "suggestions.celebrate.title",
+            "titleParams": {},
+            "reasonKey": "suggestions.celebrate.reason",
+            "reasonParams": {},
+            "action": {"labelKey": "suggestions.celebrate.action", "titleKey": "suggestions.celebrate.taskTitle", "category": "work", "priority": "medium"}
         })
-    # حد أقصى 4 اقتراحات أنيقة
+    # Validation: لا نرسل إلا مفاتيح معرّفة (يمنع XSS عبر حقن نصوص)
+    # Frontend سيترجم عبر t(key, params) مع textContent فقط
     return jsonify(suggestions[:4])
 
 

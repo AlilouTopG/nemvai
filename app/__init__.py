@@ -12,10 +12,29 @@ def create_app():
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(Config)
 
-    # Ensure instance folder exists (for sqlite)
+    # Ensure instance folder exists (for default sqlite)
     try:
         os.makedirs(app.instance_path, exist_ok=True)
     except OSError:
+        pass
+    # For persistent SQLite (e.g., sqlite:////data/nemvai.db on Render disk), ensure directory exists
+    try:
+        uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
+        if uri.startswith("sqlite"):
+            # Extract file path from URI
+            # sqlite:///arenax.db -> instance/arenax.db
+            # sqlite:////data/nemvai.db -> /data/nemvai.db
+            # sqlite:///data/nemvai.db -> instance/data/nemvai.db
+            path = uri.split("sqlite:///")[-1]
+            if path.startswith("/"):
+                # Absolute path like /data/nemvai.db
+                dir_path = os.path.dirname(path)
+            else:
+                # Relative to instance folder
+                dir_path = os.path.dirname(os.path.join(app.instance_path, path))
+            if dir_path and dir_path != app.instance_path:
+                os.makedirs(dir_path, exist_ok=True)
+    except Exception:
         pass
 
     # Init extensions

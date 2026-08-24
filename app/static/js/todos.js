@@ -13,16 +13,21 @@ async function loadSuggestions(){
     data.forEach(s=>{
       const card=document.createElement("div"); card.className="sug";
       const icon=document.createElement("div"); icon.textContent=s.icon||"💡"; icon.style.fontSize="1.2rem";
-      const h4=document.createElement("h4"); h4.textContent=s.title;
-      const p=document.createElement("p"); p.textContent=s.reason;
+      // Dynamic i18n — backend sends keys, frontend translates (XSS-safe via textContent)
+      const title = s.titleKey ? t(s.titleKey, s.titleParams||{}) : (s.title||"");
+      const reason = s.reasonKey ? t(s.reasonKey, s.reasonParams||{}) : (s.reason||"");
+      const h4=document.createElement("h4"); h4.textContent=title;
+      const p=document.createElement("p"); p.textContent=reason;
       const act=document.createElement("div"); act.className="act";
       const btn=document.createElement("button"); btn.className="btn btn-primary"; btn.style.padding="8px 12px"; btn.style.fontSize=".8rem";
-      btn.textContent=s.action.label||"تطبيق";
+      const label = s.action.labelKey ? t(s.action.labelKey) : (s.action.label||t("todos.addButton"));
+      btn.textContent=label;
       btn.onclick=()=>{
-        if(s.action.title){
-          // quick-add
-          api("/api/tasks",{method:"POST", body: JSON.stringify({title:s.action.title, category:s.action.category||"personal", priority:s.action.priority||"medium"})})
-            .then(()=>{ toast("تمت إضافة اقتراح ✓"); loadSuggestions(); loadTasks(); })
+        const quickTitleKey = s.action.titleKey;
+        const quickTitle = quickTitleKey ? t(quickTitleKey) : s.action.title;
+        if(quickTitle){
+          api("/api/tasks",{method:"POST", body: JSON.stringify({title:quickTitle, category:s.action.category||"personal", priority:s.action.priority||"medium"})})
+            .then(()=>{ toast(t("todos.added")); loadSuggestions(); loadTasks(); })
             .catch(e=> toast(e.message,false));
         } else if(s.action.filter==="overdue"){
           document.getElementById("filterStatus").value=""; loadTasks({overdue:true});
