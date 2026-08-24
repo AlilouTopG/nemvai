@@ -48,12 +48,10 @@ def register():
 
     access = create_access_token(identity=str(user.id))
     refresh = create_refresh_token(identity=str(user.id))
-    resp = jsonify({"msg": "تم إنشاء الحساب بنجاح", "user": user.to_dict()})
+    data = {"msg": "تم إنشاء الحساب بنجاح", "user": user.to_dict(), "access_token": access, "refresh_token": refresh}
+    resp = jsonify(data)
     set_access_cookies(resp, access)
     set_refresh_cookies(resp, refresh)
-    # Also return for SPA memory storage (optional)
-    resp.json["access_token"] = access
-    resp.json["refresh_token"] = refresh
     return resp, 201
 
 @auth_bp.route("/login", methods=["POST"])
@@ -74,11 +72,10 @@ def login():
 
     access = create_access_token(identity=str(user.id))
     refresh = create_refresh_token(identity=str(user.id))
-    resp = jsonify({"msg": "تم تسجيل الدخول", "user": user.to_dict()})
+    data = {"msg": "تم تسجيل الدخول", "user": user.to_dict(), "access_token": access, "refresh_token": refresh}
+    resp = jsonify(data)
     set_access_cookies(resp, access)
     set_refresh_cookies(resp, refresh)
-    resp.json["access_token"] = access
-    resp.json["refresh_token"] = refresh
     return resp, 200
 
 @auth_bp.route("/refresh", methods=["POST"])
@@ -86,9 +83,9 @@ def login():
 def refresh():
     ident = get_jwt_identity()
     access = create_access_token(identity=ident)
-    resp = jsonify({"msg": "تم التحديث"})
+    data = {"msg": "تم التحديث", "access_token": access}
+    resp = jsonify(data)
     set_access_cookies(resp, access)
-    resp.json["access_token"] = access
     return resp, 200
 
 @auth_bp.route("/logout", methods=["POST"])

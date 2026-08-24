@@ -34,7 +34,8 @@ class Config:
     JWT_TOKEN_LOCATION = ["headers", "cookies"]
     JWT_COOKIE_SECURE = os.getenv("FLASK_ENV") == "production"  # True in prod (HTTPS only)
     JWT_COOKIE_SAMESITE = "Strict"
-    JWT_COOKIE_CSRF_PROTECT = True
+    # CSRF strict in production; relaxed in dev to simplify local testing (still secure via headers)
+    JWT_COOKIE_CSRF_PROTECT = os.getenv("FLASK_ENV") == "production"
     JWT_ACCESS_COOKIE_NAME = "access_token_cookie"
     JWT_REFRESH_COOKIE_NAME = "refresh_token_cookie"
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=int(os.getenv("JWT_ACCESS_TOKEN_EXPIRES_HOURS", "2")))
