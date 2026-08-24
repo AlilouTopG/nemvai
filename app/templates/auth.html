@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ArenaX — دخول آمن</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <link rel="stylesheet" href="/static/css/auth.css">
+  <meta name="color-scheme" content="dark">
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-hero">
+      <div>
+        <div class="brand">
+          <div class="logo">AX</div>
+          <div>
+            <span>ArenaX Productivity Hub</span>
+            <small>SECURE BY DESIGN • CLOUD READY</small>
+          </div>
+        </div>
+        <h1>مساحتك الإنتاجية — بأعلى معايير الأمان</h1>
+        <p>مهام ذكية، عادات يومية بسلاسل إنجاز، ومؤقت تركيز احترافي. بياناتك معزولة تماماً لكل مستخدم ومشفرة.</p>
+        <ul class="hero-bullets">
+          <li><i>🛡️</i><div><b>حماية متقدمة</b><br><span class="muted">تشفير bcrypt 12, JWT HttpOnly, حماية XSS/CSRF/SQLi, Headers أمنية</span></div></li>
+          <li><i>⚡</i><div><b>أداء سحابي نظيف</b><br><span class="muted">واجهة داكنة سريعة ومتجاوبة — جاهزة للتوسع</span></div></li>
+          <li><i>🎯</i><div><b>إنتاجية فعلية</b><br><span class="muted">تصنيفات وأولويات ومتابعة سلاسل العادات</span></div></li>
+        </ul>
+      </div>
+      <div class="hint" style="margin-top:18px">© 2026 ArenaX — Secure Productivity</div>
+    </div>
+
+    <div class="auth-form-side">
+      <div class="tabs">
+        <button class="tab active" id="tab-login" onclick="switchTab('login')">تسجيل دخول</button>
+        <button class="tab" id="tab-register" onclick="switchTab('register')">إنشاء حساب</button>
+      </div>
+
+      <!-- Login -->
+      <form id="form-login" onsubmit="handleLogin(event)">
+        <div class="field">
+          <label>البريد أو اسم المستخدم</label>
+          <input class="input" id="login_id" placeholder="you@arenax.com أو username" required autocomplete="username">
+        </div>
+        <div class="field">
+          <label>كلمة المرور</label>
+          <input class="input" id="login_pwd" type="password" placeholder="••••••••" required autocomplete="current-password">
+          <div class="hint">نستخدم تشفير bcrypt — لا نحفظ كلمات المرور كنص.</div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:6px" type="submit">دخول آمن →</button>
+        <div class="secure-note">🔒 جلسة محمية بـ JWT + HttpOnly Cookies + SameSite Strict + Rate Limit</div>
+      </form>
+
+      <!-- Register -->
+      <form id="form-register" onsubmit="handleRegister(event)" style="display:none">
+        <div class="field">
+          <label>اسم المستخدم</label>
+          <input class="input" id="reg_user" placeholder="arena_hero" required pattern="^[a-zA-Z0-9_\-]{3,30}$">
+          <div class="hint">3-30 حرف (أحرف/أرقام/_/-)</div>
+        </div>
+        <div class="field">
+          <label>البريد الإلكتروني</label>
+          <input class="input" id="reg_email" type="email" placeholder="you@arenax.com" required autocomplete="email">
+        </div>
+        <div class="field">
+          <label>كلمة المرور</label>
+          <input class="input" id="reg_pwd" type="password" placeholder="8+ أحرف: كبير/صغير/رقم/رمز" required autocomplete="new-password" oninput="pwdMeter(this.value)">
+          <div class="progress" style="margin-top:8px"><i id="pwdBar"></i></div>
+          <div class="hint" id="pwdHint">قوة كلمة المرور تظهر هنا</div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:6px" type="submit">إنشاء حساب فاخر ✨</button>
+        <div class="divider">حماية</div>
+        <div class="secure-note">🛡️ كلمة المرور تُشفّر فوراً (bcrypt cost 12) — ومعزولة بـ User ID</div>
+      </form>
+
+      <div class="hint" style="margin-top:14px;text-align:center">
+        بالمتابعة أنت توافق على معايير الأمان والخصوصية — بياناتك لا يُرى إلا من قبلك.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="/static/js/auth.js"></script>
+</body>
+</html>

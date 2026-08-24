@@ -1,0 +1,119 @@
+/* ArenaX Productivity Hub — Modern Dark Theme (Secure Luxury) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Cairo:wght@400;700;900&display=swap');
+
+:root{
+  --bg:#0a0a0f;
+  --bg2:#11111a;
+  --card:#16161f;
+  --card2:#1e1e2e;
+  --border:#2a2a3a;
+  --text:#eef0ff;
+  --muted:#9aa0b6;
+  --primary:#7c3aed;
+  --primary2:#a78bfa;
+  --accent:#06d6a0;
+  --danger:#ef4444;
+  --warn:#f59e0b;
+  --radius:18px;
+  --shadow:0 20px 60px rgba(0,0,0,.45), 0 2px 10px rgba(124,58,237,.15);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Cairo','Inter',system-ui,sans-serif;min-height:100%}
+a{color:var(--primary2);text-decoration:none}
+a:hover{text-decoration:underline}
+button,input,select,textarea{font-family:inherit}
+.muted{color:var(--muted)}
+.container{max-width:1200px;margin:0 auto;padding:24px}
+
+/* Navbar */
+.nav{
+  position:sticky;top:0;z-index:50;
+  backdrop-filter:blur(16px);
+  background:rgba(10,10,15,.75);
+  border-bottom:1px solid var(--border);
+}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 24px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:900;letter-spacing:.5px}
+.brand .logo{
+  width:42px;height:42px;border-radius:12px;
+  background:linear-gradient(135deg,var(--primary),#4f46e5);
+  display:grid;place-items:center;box-shadow:var(--shadow);font-weight:900
+}
+.brand span{font-size:1.15rem}
+.brand small{display:block;font-weight:600;color:var(--muted);font-size:.72rem;letter-spacing:.8px;margin-top:-2px}
+.nav-actions{display:flex;align-items:center;gap:10px}
+.btn{
+  appearance:none;border:1px solid var(--border);background:var(--card);
+  color:var(--text);padding:10px 16px;border-radius:12px;cursor:pointer;
+  font-weight:700;transition:.18s;box-shadow:0 2px 10px rgba(0,0,0,.2)
+}
+.btn:hover{transform:translateY(-1px);border-color:#3a3a5a}
+.btn-primary{background:linear-gradient(135deg,var(--primary),#5b21b6);border-color:transparent;box-shadow:0 10px 30px rgba(124,58,237,.35)}
+.btn-primary:hover{filter:brightness(1.08)}
+.btn-ghost{background:transparent}
+.btn-danger{background:linear-gradient(135deg,#ef4444,#b91c1c);border-color:transparent}
+.icon{width:18px;height:18px;display:inline-block;vertical-align:middle}
+
+/* Cards */
+.card{
+  background:linear-gradient(180deg,var(--card),var(--card2));
+  border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:18px
+}
+.card h3{margin:0 0 8px 0}
+.grid{display:grid;gap:18px}
+.grid-2{grid-template-columns:1fr 1fr}
+.grid-3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+/* Inputs */
+.input,select,textarea{
+  width:100%;padding:12px 14px;border-radius:12px;
+  border:1px solid var(--border);background:#0f0f17;color:var(--text);
+  outline:none;transition:.15s
+}
+.input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(124,58,237,.2)}
+label{font-size:.85rem;color:var(--muted);display:block;margin:6px 0 6px 2px}
+.badge{padding:4px 10px;border-radius:999px;font-size:.75rem;font-weight:800;border:1px solid var(--border);background:#0f0f17}
+.badge-high{background:rgba(239,68,68,.15);color:#fecaca;border-color:rgba(239,68,68,.3)}
+.badge-urgent{background:rgba(239,68,68,.28);color:#fff;border-color:#ef4444}
+.badge-medium{background:rgba(245,158,11,.15);color:#fde68a;border-color:rgba(245,158,11,.3)}
+.badge-low{background:rgba(6,214,160,.15);color:#a7f3d0;border-color:rgba(6,214,160,.3)}
+.cat{font-size:.7rem;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+
+/* Pomodoro */
+.timer-ring{width:220px;height:220px;border-radius:50%;display:grid;place-items:center;margin:16px auto;position:relative;
+  background:conic-gradient(var(--primary) 0deg, var(--border) 0deg);
+  padding:8px;box-shadow:var(--shadow)}
+.timer-inner{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 30% 30%, #1e1e2e, #0a0a0f);display:grid;place-items:center;border:1px solid var(--border)}
+.timer-time{font-size:2.6rem;font-weight:900;letter-spacing:2px}
+.timer-label{font-size:.85rem;color:var(--muted);margin-top:2px}
+.progress{height:8px;background:#0f0f17;border-radius:999px;overflow:hidden;border:1px solid var(--border)}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,var(--primary),#06d6a0);width:0%}
+
+/* Task item */
+.task{display:flex;gap:14px;align-items:flex-start;padding:14px;border:1px solid var(--border);border-radius:14px;background:#0f0f17}
+.task.done{opacity:.6}
+.task.done h4{text-decoration:line-through}
+.task h4{margin:0;font-size:.98rem}
+.task p{margin:4px 0 0 0;color:var(--muted);font-size:.85rem}
+.task-actions{margin-left:auto;display:flex;gap:8px}
+.select-sm{padding:6px 8px;border-radius:8px;font-size:.8rem}
+
+/* Habit */
+.habit{display:flex;align-items:center;gap:14px;padding:14px;border:1px solid var(--border);border-radius:14px;background:#0f0f17}
+.habit .iconBox{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:1.3rem;border:1px solid var(--border)}
+.streak{margin-left:auto;text-align:center}
+.streak b{display:block;font-size:1.1rem}
+.streak span{font-size:.7rem;color:var(--muted)}
+.check{width:40px;height:40px;border-radius:12px;border:2px solid var(--border);background:transparent;cursor:pointer;display:grid;place-items:center;font-size:1.1rem;transition:.15s}
+.check.done{background:linear-gradient(135deg,var(--accent),#059669);border-color:transparent;color:#fff;box-shadow:0 8px 20px rgba(6,214,160,.35)}
+
+/* Toast */
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#11111a;border:1px solid var(--border);padding:12px 16px;border-radius:12px;box-shadow:var(--shadow);display:none;z-index:99;font-weight:700}
+#toast.show{display:block}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#2a2a3a;border-radius:999px}
+::-webkit-scrollbar-track{background:transparent}

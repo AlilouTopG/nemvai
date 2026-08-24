@@ -1,0 +1,75 @@
+# ==========================================================
+# ArenaX Productivity Hub — Professional .gitignore
+# Secure by Design — never commit secrets or env files
+# ==========================================================
+
+# --- Environment & Secrets ---
+.env
+.env.local
+.env.*.local
+*.env
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+ENV/
+.conda/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# --- Flask ---
+instance/
+.webassets-cache
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.log
+*.pid
+
+# --- Node (if frontend tooling added later) ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.next/
+dist/
+coverage/
+
+# --- Security / Keys ---
+*.pem
+*.key
+*.crt
+*.p12
+secrets/
+credentials.json
+
+# --- OS ---
+.DS_Store
+ehthumbs.db
+Desktop.ini
+
+# --- Testing ---
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
