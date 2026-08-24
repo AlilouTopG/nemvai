@@ -99,3 +99,33 @@ def habit_logs():
         q = q.filter(HabitLog.habit_id == hid)
     logs = q.order_by(HabitLog.log_date.desc()).limit(500).all()
     return jsonify([l.to_dict() for l in logs])
+
+@habits_bp.route("/stats", methods=["GET"])
+@jwt_required()
+def habit_stats():
+    """إحصائيات غنية للصفحة المستقلة — RLS آمن"""
+    uid = _uid()
+    habits = owned_query(Habit, uid).all()
+    total = len(habits)
+    if total == 0:
+        return jsonify({"total": 0, "completed_today": 0, "avg_streak": 0, "best_streak": 0, "total_logs": 0, "completion_rate": 0})
+    completed_today = sum(1 for h in habits if h.is_completed_today())
+    streaks = [h.current_streak() for h in habits]
+    avg_streak = round(sum(streaks) / total, 1) if total else 0
+    best_streak = max(streaks) if streaks else 0
+    total_logs = HabitLog.query.filter_by(user_id=uid, completed=True).count()
+    # completion rate آخر 7 أيام
+    from datetime import date, timedelta
+    week_ago = date.today() - timedelta(days=6)
+    week_logs = HabitLog.query.filter(HabitLog.user_id == uid, HabitLog.log_date >= week_ago, HabitLog.completed == True).count()
+    possible = total * 7
+    completion_rate = round((week_logs / possible * 100) if possible else 0, 1)
+    return jsonify({
+        "total": total,
+        "completed_today": completed_today,
+        "avg_streak": avg_streak,
+        "best_streak": best_streak,
+        "total_logs": total_logs,
+        "completion_rate": completion_rate,
+        "streaks": streaks
+    })

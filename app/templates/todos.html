@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Nemvai — المهام{% endblock %}
+{% block head %}
+<style>
+.suggestions{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:14px 0}
+.sug{padding:14px;border:1px solid var(--border);border-radius:14px;background:linear-gradient(135deg,#16161f,#1e1e2e);position:relative;overflow:hidden}
+.sug::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,var(--primary),var(--accent));opacity:.9}
+.sug h4{margin:4px 0 4px 0;font-size:.95rem}
+.sug p{margin:0;color:var(--muted);font-size:.8rem;line-height:1.5}
+.sug .act{margin-top:10px}
+.sug .badge{font-size:.7rem}
+</style>
+{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:10px 0 6px 0">
+  <h2 style="margin:0">📋 المهام الذكية — صفحة حصرية</h2>
+  <div class="muted" style="font-size:.85rem" id="todosStats">—</div>
+</div>
+
+<!-- Smart Suggestions — compact elegant -->
+<div class="card" style="padding:14px">
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <h3 style="margin:0;font-size:1rem">✨ اقتراحات ذكية</h3>
+    <span class="muted" style="font-size:.75rem">مبنية على سياق مهامك • تتحدث تلقائياً</span>
+  </div>
+  <div id="suggestions" class="suggestions">
+    <div class="muted" style="padding:12px;text-align:center">جاري تحليل سياق مهامك...</div>
+  </div>
+</div>
+
+<!-- Task Manager Exclusive -->
+<div class="card" style="margin-top:14px">
+  <div style="display:flex;align-items:center;gap:10px;justify-content:space-between">
+    <h3 style="margin:0">إدارة المهام</h3>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select id="filterStatus" onchange="loadTasks()" class="select-sm">
+        <option value="">الكل</option><option value="todo">قيد الانتظار</option><option value="in_progress">قيد التنفيذ</option><option value="done">مكتملة</option>
+      </select>
+      <select id="filterPrio" onchange="loadTasks()" class="select-sm">
+        <option value="">كل الأولويات</option><option value="urgent">عاجل</option><option value="high">مرتفع</option><option value="medium">متوسط</option><option value="low">منخفض</option>
+      </select>
+    </div>
+  </div>
+
+  <form onsubmit="createTask(event)" style="display:grid;gap:10px;margin:14px 0;padding:14px;border:1px dashed var(--border);border-radius:14px;background:#0f0f17">
+    <input class="input" id="t_title" placeholder="عنوان المهمة — مثال: إنهاء تصميم Nemvai" required>
+    <textarea id="t_desc" rows="2" placeholder="وصف (اختياري)"></textarea>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <select id="t_cat" style="flex:1"><option value="work">عمل</option><option value="personal" selected>شخصي</option><option value="study">دراسة</option><option value="health">صحة</option><option value="other">أخرى</option></select>
+      <select id="t_prio" style="flex:1"><option value="low">منخفض</option><option value="medium" selected>متوسط</option><option value="high">مرتفع</option><option value="urgent">عاجل</option></select>
+      <input id="t_due" type="date" style="flex:1" class="input">
+    </div>
+    <button class="btn btn-primary" type="submit">إضافة مهمة +</button>
+  </form>
+
+  <div id="tasksList" style="display:grid;gap:10px"></div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/todos.js"></script>
+{% endblock %}

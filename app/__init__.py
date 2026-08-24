@@ -64,14 +64,33 @@ def create_app():
     app.register_blueprint(tasks_bp, url_prefix="/api/tasks")
     app.register_blueprint(habits_bp, url_prefix="/api/habits")
 
-    # Frontend routes
+    # Frontend routes — فصل معماري نظيف (OWASP + Factory)
     @app.route("/")
     def index():
+        # Homepage مخصص حصرياً لـ To-Do (مواصفات جديدة) — JS سيتحقق من الجلسة ويحول لـ /auth إن لزم
+        return render_template("todos.html")
+
+    @app.route("/todos")
+    def todos_page():
+        return render_template("todos.html")
+
+    @app.route("/calendar")
+    def calendar_page():
+        return render_template("calendar.html")
+
+    @app.route("/habits")
+    def habits_page():
+        return render_template("habits.html")
+
+    @app.route("/auth")
+    def auth_page():
         return render_template("auth.html")
 
     @app.route("/dashboard")
     def dashboard():
-        return render_template("dashboard.html")
+        # legacy — تحويل للمسار الجديد
+        from flask import redirect
+        return redirect("/todos", code=302)
 
     @app.route("/health")
     def health():

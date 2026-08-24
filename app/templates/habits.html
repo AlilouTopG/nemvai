@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Nemvai — العادات{% endblock %}
+{% block head %}
+<style>
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:12px 0}
+.stat{padding:16px;border:1px solid var(--border);border-radius:14px;background:linear-gradient(135deg,#16161f,#1e1e2e);text-align:center}
+.stat b{font-size:1.5rem;display:block}
+.stat span{font-size:.75rem;color:var(--muted)}
+.habit-detailed{padding:14px;border:1px solid var(--border);border-radius:14px;background:#0f0f17;display:grid;gap:10px}
+.habit-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.habit-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.log-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px}
+.log-cell{height:18px;border-radius:4px;background:#1a1a2a;border:1px solid var(--border)}
+.log-cell.done{background:linear-gradient(135deg,var(--accent),#059669);border-color:transparent}
+</style>
+{% endblock %}
+{% block content %}
+<h2 style="margin:12px 0 4px 0">🔥 العادات — لوحة غنية ومستقلة</h2>
+<p class="muted" style="margin:0 0 12px 0">تتبع عميق: سلاسل الإنجاز، نسب الإتمام، وسجل يومي مفصل</p>
+
+<div id="habitStats" class="stat-grid">
+  <div class="stat"><b id="st_total">—</b><span>إجمالي العادات</span></div>
+  <div class="stat"><b id="st_today">—</b><span>مكتملة اليوم</span></div>
+  <div class="stat"><b id="st_avg">—</b><span>متوسط السلسلة</span></div>
+  <div class="stat"><b id="st_best">—</b><span>أفضل سلسلة 🔥</span></div>
+  <div class="stat"><b id="st_rate">—</b><span>نسبة إتمام 7 أيام</span></div>
+  <div class="stat"><b id="st_logs">—</b><span>إجمالي السجلات</span></div>
+</div>
+
+<div class="card">
+  <h3 style="margin:0 0 10px 0">إضافة عادة جديدة</h3>
+  <form onsubmit="createHabit(event)" style="display:flex;gap:8px;flex-wrap:wrap">
+    <input class="input" id="h_name" placeholder="مثال: قراءة 20 دقيقة" required style="flex:1;min-width:200px">
+    <input class="input" id="h_desc" placeholder="وصف (اختياري)" style="flex:1;min-width:160px">
+    <input class="input" id="h_icon" placeholder="🔥" value="🔥" style="width:70px">
+    <input class="input" id="h_color" type="color" value="#8b5cf6" style="width:60px;padding:4px">
+    <button class="btn btn-primary" type="submit">إضافة</button>
+  </form>
+</div>
+
+<div id="habitsList" style="display:grid;gap:12px;margin-top:14px"></div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/habits.js"></script>
+{% endblock %}
