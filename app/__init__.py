@@ -2,7 +2,7 @@
 ArenaX Productivity Hub — App Factory (Secure by Design)
 """
 import os
-from flask import Flask, render_template, jsonify, send_from_directory
+from flask import Flask, render_template, jsonify, request, send_from_directory
 from .config import Config
 from .extensions import db, jwt, cors, limiter
 from .security.middleware import register_security_hooks
@@ -38,13 +38,17 @@ def create_app():
     def _revoked(jwt_header, jwt_payload):
         return jsonify({"error": "الجلسة أُلغيت — سجل الدخول مجدداً"}), 401
 
-    # JWT error handlers — return JSON not HTML (prevent info leak)
+    # JWT error handlers — Secure (لا تسريب تفاصيل في الإنتاج)
     @jwt.unauthorized_loader
     def _unauth(msg):
+        if app.config.get("FLASK_ENV") == "production":
+            return jsonify({"error": "غير مصرح — سجل الدخول أولاً"}), 401
         return jsonify({"error": "غير مصرح — سجل الدخول أولاً", "detail": msg}), 401
 
     @jwt.invalid_token_loader
     def _invalid(msg):
+        if app.config.get("FLASK_ENV") == "production":
+            return jsonify({"error": "توكن غير صالح"}), 422
         return jsonify({"error": "توكن غير صالح", "detail": msg}), 422
 
     @jwt.expired_token_loader
@@ -73,19 +77,42 @@ def create_app():
     def health():
         return jsonify({"status": "ok", "app": app.config["APP_NAME"]})
 
-    # Error handlers — generic, no stack traces in prod
+    # Error handlers — Secure (OWASP: لا تسريب مسارات/Stack traces في الإنتاج)
     @app.errorhandler(404)
     def not_found(e):
-        if "/api/" in str(e):
+        # في الـ API نعيد JSON عام بدون تفاصيل، في الواجهة نعيد الصفحة
+        if request.path.startswith("/api/"):
             return jsonify({"error": "غير موجود"}), 404
         return render_template("auth.html"), 404
 
+    @app.errorhandler(405)
+    def method_not_allowed(e):
+        return jsonify({"error": "طريقة غير مسموحة"}), 405
+
     @app.errorhandler(429)
     def ratelimit(e):
+        # في الإنتاج لا نُسرب تفاصيل الـ limiter
+        if app.config.get("FLASK_ENV") == "production":
+            return jsonify({"error": "عدد طلبات كثير — حاول لاحقاً"}), 429
         return jsonify({"error": "عدد طلبات كثير — حاول لاحقاً", "detail": str(e)}), 429
 
     @app.errorhandler(500)
     def server_err(e):
+        # لا نُسرب أي تفاصيل تقنية أو مسارات ملفات
+        app.logger.error(f"Internal error at {request.path}: {type(e).__name__}")
+        return jsonify({"error": "خطأ داخلي"}), 500
+
+    @app.errorhandler(Exception)
+    def _unhandled(e):
+        # أي استثناء غير متوقع — لا نعرض Stack trace للمستخدم
+        if isinstance(e, (KeyError, ValueError, TypeError, AttributeError)):
+            app.logger.error(f"Unhandled {type(e).__name__} at {request.path}")
+            return jsonify({"error": "خطأ في الطلب"}), 400
+        # Let Flask handle HTTPExceptions normally
+        from werkzeug.exceptions import HTTPException
+        if isinstance(e, HTTPException):
+            return e
+        app.logger.error(f"Unhandled exception at {request.path}: {type(e).__name__}")
         return jsonify({"error": "خطأ داخلي"}), 500
 
     # Create tables + تفعيل RLS على مستوى المحرك
