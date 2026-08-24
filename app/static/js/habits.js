@@ -31,11 +31,14 @@ async function loadHabits(){
     const del=document.createElement("button"); del.className="btn btn-ghost"; del.textContent="✕"; del.onclick=()=> deleteHabit(h.id);
     const actions=document.createElement("div"); actions.style.display="flex"; actions.style.gap="8px"; actions.style.alignItems="center"; actions.append(check,del);
     top.append(iconBox,info,streak,actions);
-    // meta + logs preview (آخر 14 يوم)
+    // meta — rich details (frequency, duration, target) + i18n Latin
     const meta=document.createElement("div"); meta.className="habit-meta";
     const badge1=document.createElement("span"); badge1.className="badge"; badge1.textContent=`${t("habits.streak")} ${fmtNum(h.streak)}`;
-    const badge2=document.createElement("span"); badge2.className="badge"; badge2.textContent=`${h.color}`;
-    meta.append(badge1,badge2);
+    const badge2=document.createElement("span"); badge2.className="badge"; badge2.textContent=`${fmtNum(h.frequency_per_week||7)}/7 ${currentLang==="en"?"per week":currentLang==="fr"?"par sem.":"في الأسبوع"}`;
+    const badge3=document.createElement("span"); badge3.className="badge"; badge3.textContent=`${fmtNum(h.duration_minutes||30)}m`;
+    const badge4=document.createElement("span"); badge4.className="badge"; badge4.textContent=`${fmtNum(h.target_months||1)} ${currentLang==="en"?"mo":currentLang==="fr"?"mois":"شهر"}`;
+    const badgeColor=document.createElement("span"); badgeColor.className="badge"; badgeColor.textContent=`${h.color}`;
+    meta.append(badge1,badge2,badge3,badge4,badgeColor);
     // mini heatmap
     const heat=document.createElement("div"); heat.className="log-grid";
     try{
@@ -52,11 +55,43 @@ async function loadHabits(){
     list.appendChild(card);
   }
 }
-async function createHabit(e){
-  e.preventDefault();
-  const payload={ name: document.getElementById("h_name").value.trim(), description: document.getElementById("h_desc").value.trim(), icon: document.getElementById("h_icon").value.trim()||"🔥", color: document.getElementById("h_color").value };
-  try{ await api("/api/habits",{method:"POST", body: JSON.stringify(payload)}); e.target.reset(); document.getElementById("h_icon").value="🔥"; document.getElementById("h_color").value="#8b5cf6"; toast(t("habits.added")); loadStats(); loadHabits(); }catch(err){ toast(err.message,false); }
+function openHabitModal(){
+  const m=document.getElementById("habitModal");
+  if(m) m.classList.add("open");
+  // re-apply i18n for modal
+  if(typeof applyTranslations==='function') applyTranslations();
 }
+function closeHabitModal(){
+  const m=document.getElementById("habitModal");
+  if(m) m.classList.remove("open");
+}
+async function submitHabitModal(e){
+  e.preventDefault();
+  const payload={
+    name: document.getElementById("m_name").value.trim(),
+    description: document.getElementById("m_desc").value.trim(),
+    icon: document.getElementById("m_icon").value.trim()||"🔥",
+    color: document.getElementById("m_color").value,
+    frequency_per_week: parseInt(document.getElementById("m_freq").value,10),
+    duration_minutes: parseInt(document.getElementById("m_duration").value,10),
+    target_months: parseInt(document.getElementById("m_target").value,10)
+  };
+  try{
+    await api("/api/habits",{method:"POST", body: JSON.stringify(payload)});
+    closeHabitModal();
+    e.target.reset();
+    // reset defaults
+    document.getElementById("m_icon").value="🔥";
+    document.getElementById("m_color").value="#8b5cf6";
+    document.getElementById("m_freq").value="3";
+    document.getElementById("m_duration").value="30";
+    document.getElementById("m_target").value="1";
+    toast(t("habits.added"));
+    loadStats(); loadHabits();
+  }catch(err){ toast(err.message,false); }
+}
+// Legacy alias for old inline form (if any)
+async function createHabit(e){ return submitHabitModal(e); }
 async function toggleHabit(id){ try{ await api(`/api/habits/${id}/toggle`,{method:"POST", body: JSON.stringify({})}); toast(t("habits.updated")); loadStats(); loadHabits(); }catch(err){ toast(err.message,false); } }
 async function deleteHabit(id){ if(!confirm(t("habits.deleteConfirm")))return; try{ await api(`/api/habits/${id}`,{method:"DELETE"}); toast(t("habits.deleted")); loadStats(); loadHabits(); }catch(err){ toast(err.message,false); } }
 function refreshAll(){ loadStats(); loadHabits(); }

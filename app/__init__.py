@@ -7,6 +7,7 @@ from .config import Config
 from .extensions import db, jwt, cors, limiter
 from .security.middleware import register_security_hooks
 from .security.rls import register_rls_engine_hooks, register_rls_request_hooks
+from .security.audit import register_audit_hooks
 
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
@@ -46,6 +47,8 @@ def create_app():
     register_security_hooks(app)
     # RLS — Row Level Security (Request hooks أولاً)
     register_rls_request_hooks(app, db)
+    # Audit logging — 4th pillar (OWASP)
+    register_audit_hooks(app)
 
     # JWT blocklist — يمنع Authorization Bypass عبر توكن مُلغى (بعد logout)
     from .extensions import revoked_jtis

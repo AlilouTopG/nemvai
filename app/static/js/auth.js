@@ -29,14 +29,11 @@ function pwdMeter(v){
   hint.textContent = v ? `القوة: ${labels[Math.max(0,s-1)]}` : "قوة كلمة المرور تظهر هنا";
 }
 async function api(path, opts={}){
-  // CSRF: fetch csrf token from cookies automatically via Flask-JWT
-  // Include credentials for HttpOnly cookies
   opts.credentials="include";
   opts.headers = opts.headers||{};
   if(opts.body && !(opts.body instanceof FormData)){
     opts.headers["Content-Type"]="application/json";
   }
-  // Try read csrf token from cookie for double-submit (Flask-JWT sets csrf_access_token)
   const m=document.cookie.match(/csrf_access_token=([^;]+)/);
   if(m) opts.headers["X-CSRF-TOKEN"]=decodeURIComponent(m[1]);
   const res= await fetch(path, opts);
@@ -53,10 +50,9 @@ async function handleRegister(e){
     password: document.getElementById("reg_pwd").value
   };
   try{
-    const data= await api("/api/auth/register",{method:"POST", body: JSON.stringify(payload)});
-    if(data.access_token) localStorage.setItem("ax_token", data.access_token);
+    await api("/api/auth/register",{method:"POST", body: JSON.stringify(payload)});
     toast("تم إنشاء الحساب بنجاح ✨");
-    setTimeout(()=> location.href="/dashboard", 700);
+    setTimeout(()=> location.href="/todos", 700);
   }catch(err){ toast(err.message,false); }
 }
 async function handleLogin(e){
@@ -66,17 +62,16 @@ async function handleLogin(e){
     password: document.getElementById("login_pwd").value
   };
   try{
-    const data= await api("/api/auth/login",{method:"POST", body: JSON.stringify(payload)});
-    if(data.access_token) localStorage.setItem("ax_token", data.access_token);
+    await api("/api/auth/login",{method:"POST", body: JSON.stringify(payload)});
     toast("مرحباً بعودتك 🔥");
-    setTimeout(()=> location.href="/dashboard", 600);
+    setTimeout(()=> location.href="/todos", 600);
   }catch(err){ toast(err.message,false); }
 }
-// If already authenticated, redirect
+// If already authenticated, redirect to todos
 (async()=>{
   try{
     const r= await fetch("/api/auth/me",{credentials:"include"});
     const j= await r.json();
-    if(j.authenticated) location.href="/dashboard";
+    if(j.authenticated) location.href="/todos";
   }catch{}
 })();

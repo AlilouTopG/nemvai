@@ -10,6 +10,7 @@ from flask_jwt_extended import (
 from app.extensions import db, limiter, revoked_jtis
 from app.models import User
 from app.auth.utils import validate_username, validate_password, validate_email_addr, sanitize_str
+from app.security.audit import log_failed_login, log_success_login, log_logout, audit_log
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -45,10 +46,11 @@ def register():
     user.set_password(password)
     db.session.add(user)
     db.session.commit()
+    audit_log("user_registered", {"user_id": user.id, "username": username[:30]}, level="INFO")
 
     access = create_access_token(identity=str(user.id))
     refresh = create_refresh_token(identity=str(user.id))
-    data = {"msg": "تم إنشاء الحساب بنجاح", "user": user.to_dict(), "access_token": access, "refresh_token": refresh}
+    data = {"msg": "تم إنشاء الحساب بنجاح", "user": user.to_dict()}
     resp = jsonify(data)
     set_access_cookies(resp, access)
     set_refresh_cookies(resp, refresh)
@@ -66,16 +68,19 @@ def login():
 
     user = User.query.filter((User.username == identifier) | (User.email == identifier)).first()
     if not user or not user.check_password(password):
+        log_failed_login(identifier, reason="invalid_credentials" if user else "user_not_found")
         return jsonify({"error": "بيانات الدخول غير صحيحة"}), 401
     if not user.is_active:
+        log_failed_login(identifier, reason="account_disabled")
         return jsonify({"error": "الحساب معطّل"}), 403
 
     access = create_access_token(identity=str(user.id))
     refresh = create_refresh_token(identity=str(user.id))
-    data = {"msg": "تم تسجيل الدخول", "user": user.to_dict(), "access_token": access, "refresh_token": refresh}
+    data = {"msg": "تم تسجيل الدخول", "user": user.to_dict()}
     resp = jsonify(data)
     set_access_cookies(resp, access)
     set_refresh_cookies(resp, refresh)
+    log_success_login(user.id, user.username)
     return resp, 200
 
 @auth_bp.route("/refresh", methods=["POST"])
@@ -83,7 +88,7 @@ def login():
 def refresh():
     ident = get_jwt_identity()
     access = create_access_token(identity=ident)
-    data = {"msg": "تم التحديث", "access_token": access}
+    data = {"msg": "تم التحديث"}
     resp = jsonify(data)
     set_access_cookies(resp, access)
     return resp, 200
@@ -92,17 +97,22 @@ def refresh():
 @jwt_required(optional=True)
 def logout():
     # Revoke current tokens إن وُجدت (يمنع إعادة الاستخدام حتى بعد مسح الكوكيز)
+    user_id = None
     try:
         from flask_jwt_extended import get_jwt
         jwt_data = get_jwt()
         jti = jwt_data.get("jti")
         if jti:
             revoked_jtis.add(jti)
+        user_id = jwt_data.get("sub")
     except Exception:
         pass
-    # وأيضاً revoke الـ refresh إن أُرسل
     resp = jsonify({"msg": "تم تسجيل الخروج"})
     unset_jwt_cookies(resp)
+    try:
+        log_logout(user_id or "unknown")
+    except Exception:
+        pass
     return resp, 200
 
 @auth_bp.route("/me", methods=["GET"])

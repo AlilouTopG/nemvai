@@ -83,12 +83,12 @@ class Config:
     # Prevent leaking DB errors
     PROPAGATE_EXCEPTIONS = False
 
-    # JWT — HttpOnly, Secure, SameSite=Strict (OWASP)
-    JWT_TOKEN_LOCATION = ["headers", "cookies"]
+    # JWT — HttpOnly, Secure, SameSite=Strict (OWASP) — 4 Pillars: HttpOnly Secure Cookies
+    JWT_TOKEN_LOCATION = ["cookies"]  # Migrated from localStorage -> HttpOnly cookies only
     JWT_COOKIE_SECURE = os.getenv("FLASK_ENV") == "production"
     JWT_COOKIE_HTTPONLY = True
     JWT_COOKIE_SAMESITE = "Strict"
-    JWT_COOKIE_CSRF_PROTECT = os.getenv("FLASK_ENV") == "production"
+    JWT_COOKIE_CSRF_PROTECT = True  # Robust CSRF for all state-changing requests
     JWT_ACCESS_COOKIE_NAME = "access_token_cookie"
     JWT_REFRESH_COOKIE_NAME = "refresh_token_cookie"
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=int(os.getenv("JWT_ACCESS_TOKEN_EXPIRES_HOURS", "2")))

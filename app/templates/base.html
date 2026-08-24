@@ -41,7 +41,7 @@
 </div>
 <div id="toast"></div>
 <script>
-// Shared secure helpers (XSS-safe: textContent only)
+// Shared secure helpers (XSS-safe: textContent only, HttpOnly cookies)
 function toast(msg, ok=true){
   const t=document.getElementById("toast");
   t.textContent=msg;
@@ -51,8 +51,7 @@ function toast(msg, ok=true){
 }
 function authHeaders(){
   const h={};
-  const tok=localStorage.getItem("ax_token");
-  if(tok) h["Authorization"]="Bearer "+tok;
+  // JWT now HttpOnly — JS cannot read it, only CSRF token is readable
   const m=document.cookie.match(/csrf_access_token=([^;]+)/);
   if(m) h["X-CSRF-TOKEN"]=decodeURIComponent(m[1]);
   return h;
@@ -63,7 +62,7 @@ async function api(path, opts={}){
   if(opts.body && typeof opts.body==="string") opts.headers["Content-Type"]="application/json";
   const res= await fetch(path, opts);
   let data=null; try{ data= await res.json(); }catch{}
-  if(res.status===401){ toast("انتهت الجلسة — سجل الدخول مجدداً",false); setTimeout(()=> location.href="/auth",1200); throw new Error("unauth"); }
+  if(res.status===401){ toast(t ? t("toast.unauth") : "انتهت الجلسة — سجل الدخول مجدداً",false); setTimeout(()=> location.href="/auth",1200); throw new Error("unauth"); }
   if(!res.ok) throw new Error((data&&(data.error||data.msg))||`خطأ ${res.status}`);
   return data;
 }
@@ -71,12 +70,12 @@ async function loadMe(){
   try{
     const me= await api("/api/auth/me");
     if(!me.authenticated) throw new Error();
-    document.getElementById("userLine").textContent = `${me.user.username} • ${me.user.email}`;
+    const el=document.getElementById("userLine");
+    if(el) el.textContent = `${me.user.username} • ${me.user.email}`;
   }catch{ location.href="/auth"; }
 }
 async function logout(){
   try{ await api("/api/auth/logout",{method:"POST", body:"{}"}); }catch{}
-  localStorage.removeItem("ax_token");
   location.href="/auth";
 }
 loadMe();

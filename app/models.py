@@ -5,13 +5,23 @@ All queries MUST filter by user_id — enforced at API layer.
 from datetime import datetime, timezone, date
 from .extensions import db
 import bcrypt
+try:
+    from argon2 import PasswordHasher
+    from argon2.exceptions import VerifyMismatchError, InvalidHash
+    _ph = PasswordHasher(time_cost=3, memory_cost=65536, parallelism=4, hash_len=32, salt_len=16)
+    _argon2_available = True
+except Exception:
+    _ph = None
+    _argon2_available = False
+    VerifyMismatchError = Exception
+    InvalidHash = Exception
 
 class User(db.Model):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False, index=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
-    password_hash = db.Column(db.String(128), nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     is_active = db.Column(db.Boolean, default=True)
 
@@ -19,15 +29,59 @@ class User(db.Model):
     habits = db.relationship("Habit", backref="user", lazy=True, cascade="all, delete-orphan")
 
     def set_password(self, raw: str):
-        # bcrypt with cost 12 (secure, adaptive)
-        hashed = bcrypt.hashpw(raw.encode("utf-8"), bcrypt.gensalt(rounds=12))
-        self.password_hash = hashed.decode("utf-8")
+        # Argon2id — gold standard (OWASP), fallback to bcrypt if unavailable
+        if _argon2_available and _ph is not None:
+            self.password_hash = _ph.hash(raw)
+        else:
+            hashed = bcrypt.hashpw(raw.encode("utf-8"), bcrypt.gensalt(rounds=12))
+            self.password_hash = hashed.decode("utf-8")
 
     def check_password(self, raw: str) -> bool:
+        # Try Argon2id first
+        if _argon2_available and _ph is not None:
+            try:
+                # Argon2 hashes start with $argon2
+                if self.password_hash.startswith("$argon2"):
+                    return _ph.verify(self.password_hash, raw)
+            except (VerifyMismatchError, InvalidHash):
+                pass
+            except Exception:
+                pass
+            # Fallback: check if it's Argon2 but mismatched
+            try:
+                if self.password_hash.startswith("$argon2"):
+                    _ph.verify(self.password_hash, raw)
+                    return True
+                # If not argon2, try bcrypt
+            except (VerifyMismatchError, InvalidHash):
+                # Try bcrypt for old hashes
+                try:
+                    return bcrypt.checkpw(raw.encode("utf-8"), self.password_hash.encode("utf-8"))
+                except Exception:
+                    return False
+            except Exception:
+                pass
+        # Fallback bcrypt (for old hashes or if argon2 unavailable)
         try:
-            return bcrypt.checkpw(raw.encode("utf-8"), self.password_hash.encode("utf-8"))
+            # If hash is bcrypt, verify
+            if self.password_hash.startswith("$2b$") or self.password_hash.startswith("$2a$") or self.password_hash.startswith("$2y$"):
+                result = bcrypt.checkpw(raw.encode("utf-8"), self.password_hash.encode("utf-8"))
+                # Upgrade old bcrypt hash to Argon2id on successful login (transparent migration)
+                if result and _argon2_available and _ph is not None:
+                    try:
+                        # Avoid rehashing in same request if DB not in app context — caller may handle
+                        pass
+                    except Exception:
+                        pass
+                return result
+            # Try argon2 verify for any other case
+            if _argon2_available and _ph is not None:
+                return _ph.verify(self.password_hash, raw)
+        except (VerifyMismatchError, InvalidHash):
+            return False
         except Exception:
             return False
+        return False
 
     def to_dict(self):
         return {"id": self.id, "username": self.username, "email": self.email, "created_at": self.created_at.isoformat()}
@@ -70,6 +124,10 @@ class Habit(db.Model):
     description = db.Column(db.String(255), nullable=True)
     icon = db.Column(db.String(50), default="🔥")
     color = db.Column(db.String(20), default="#8b5cf6")
+    # Advanced configuration — rich workflow
+    frequency_per_week = db.Column(db.Integer, default=7)  # 1-7
+    duration_minutes = db.Column(db.Integer, default=30)  # 5-480
+    target_months = db.Column(db.Integer, default=1)  # 1-36
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     logs = db.relationship("HabitLog", backref="habit", lazy=True, cascade="all, delete-orphan")
@@ -81,6 +139,9 @@ class Habit(db.Model):
             "description": self.description,
             "icon": self.icon,
             "color": self.color,
+            "frequency_per_week": self.frequency_per_week,
+            "duration_minutes": self.duration_minutes,
+            "target_months": self.target_months,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
         if include_streak:

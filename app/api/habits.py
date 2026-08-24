@@ -35,13 +35,39 @@ def create_habit():
     data = _payload()
     name = sanitize_str(data.get("name", ""), 100)
     if not name or len(name) < 2:
-        return jsonify({"error": "اسم العادة مطلوب"}), 400
-    desc = sanitize_str(data.get("description", ""), 255)
+        return jsonify({"error": "اسم العادة مطلوب (2+ أحرف)"}), 400
+    desc = sanitize_str(data.get("description", ""), 500)
+    # Description / Explanation: allow longer but sanitized
+    if len(desc) > 500:
+        desc = desc[:500]
     icon = sanitize_str(data.get("icon", "🔥"), 10) or "🔥"
     color = sanitize_str(data.get("color", "#8b5cf6"), 20)
     if not color.startswith("#"):
         color = "#8b5cf6"
-    h = Habit(user_id=uid, name=name, description=desc, icon=icon, color=color)
+    # Advanced: frequency, duration, target — strict validation (OWASP)
+    def _int_in_range(val, default, min_v, max_v):
+        try:
+            iv = int(str(val).strip())
+            if iv < min_v or iv > max_v:
+                return None
+            return iv
+        except Exception:
+            # If missing, return default
+            if val is None or val == "":
+                return default
+            return None
+    freq = _int_in_range(data.get("frequency_per_week", 7), 7, 1, 7)
+    if freq is None:
+        return jsonify({"error": "frequency_per_week يجب أن يكون 1-7"}), 400
+    dur = _int_in_range(data.get("duration_minutes", 30), 30, 5, 480)
+    if dur is None:
+        return jsonify({"error": "duration_minutes يجب أن يكون 5-480"}), 400
+    target = _int_in_range(data.get("target_months", 1), 1, 1, 36)
+    if target is None:
+        return jsonify({"error": "target_months يجب أن يكون 1-36"}), 400
+    # RLS: user_id from JWT only
+    h = Habit(user_id=uid, name=name, description=desc, icon=icon, color=color,
+              frequency_per_week=freq, duration_minutes=dur, target_months=target)
     db.session.add(h)
     db.session.commit()
     return jsonify(h.to_dict(include_streak=True)), 201

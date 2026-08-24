@@ -15,6 +15,17 @@
 .log-cell{height:18px;border-radius:4px;background:#1a1a2a;border:1px solid var(--border)}
 [data-theme="light"] .log-cell{ background:#e8e8ef; }
 .log-cell.done{background:linear-gradient(135deg,var(--accent),#059669);border-color:transparent}
+/* Modal — rich configuration */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+.modal.open{display:flex}
+.modal-card{width:100%;max-width:560px;background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:20px;max-height:90vh;overflow:auto}
+[data-theme="light"] .modal-card{ background:#ffffff; }
+.modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.modal-head h3{margin:0;font-size:1.1rem}
+.form-grid{display:grid;gap:12px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:600px){ .form-row{grid-template-columns:1fr} }
+.help{font-size:.72rem;color:var(--muted);margin-top:4px}
 </style>
 {% endblock %}
 {% block content %}
@@ -30,18 +41,86 @@
   <div class="stat"><b id="st_logs">—</b><span data-i18n="habits.statsLogs">إجمالي السجلات</span></div>
 </div>
 
-<div class="card">
-  <h3 style="margin:0 0 10px 0" data-i18n="habits.addTitle">إضافة عادة جديدة</h3>
-  <form onsubmit="createHabit(event)" style="display:flex;gap:8px;flex-wrap:wrap">
-    <input class="input" id="h_name" data-i18n-placeholder="habits.namePlaceholder" placeholder="مثال: قراءة 20 دقيقة" required style="flex:1;min-width:200px">
-    <input class="input" id="h_desc" data-i18n-placeholder="habits.descPlaceholder" placeholder="وصف (اختياري)" style="flex:1;min-width:160px">
-    <input class="input" id="h_icon" placeholder="🔥" value="🔥" style="width:70px">
-    <input class="input" id="h_color" type="color" value="#8b5cf6" style="width:60px;padding:4px">
-    <button class="btn btn-primary" type="submit" data-i18n="habits.addButton">إضافة</button>
-  </form>
+<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+  <div>
+    <h3 style="margin:0" data-i18n="habits.addTitle">إضافة عادة جديدة</h3>
+    <div class="muted" style="font-size:.8rem" data-i18n="habits.subtitle">تتبع عميق: سلاسل الإنجاز، نسب الإتمام، وسجل يومي مفصل</div>
+  </div>
+  <button class="btn btn-primary" onclick="openHabitModal()" data-i18n="habits.addButton">إضافة</button>
 </div>
 
 <div id="habitsList" style="display:grid;gap:12px;margin-top:14px"></div>
+
+<!-- Rich Configuration Modal -->
+<div id="habitModal" class="modal" onclick="if(event.target===this) closeHabitModal()">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 data-i18n="habits.modalTitle">إنشاء عادة جديدة — إعداد مفصل</h3>
+      <button class="btn btn-ghost" onclick="closeHabitModal()" aria-label="Close">✕</button>
+    </div>
+    <form id="habitForm" onsubmit="submitHabitModal(event)" class="form-grid">
+      <div>
+        <label data-i18n="habits.fieldTitle">عنوان العادة</label>
+        <input class="input" id="m_name" data-i18n-placeholder="habits.fieldTitlePlaceholder" placeholder="مثال: جري صباحي" required maxlength="100">
+      </div>
+      <div>
+        <label data-i18n="habits.fieldDesc">الوصف / ما هي هذه العادة؟</label>
+        <textarea id="m_desc" rows="2" data-i18n-placeholder="habits.fieldDescPlaceholder" placeholder="اشرح لماذا هذه العادة مهمة..." maxlength="500"></textarea>
+      </div>
+      <div class="form-row">
+        <div>
+          <label data-i18n="habits.fieldFrequency">التكرار في الأسبوع</label>
+          <select id="m_freq" class="input">
+            <option value="7">7 — يومياً</option>
+            <option value="6">6</option>
+            <option value="5">5</option>
+            <option value="4">4</option>
+            <option value="3" selected>3 — أيام في الأسبوع</option>
+            <option value="2">2</option>
+            <option value="1">1</option>
+          </select>
+          <div class="help" data-i18n="habits.fieldFrequencyHelp">كم يوماً في الأسبوع؟ (1-7)</div>
+        </div>
+        <div>
+          <label data-i18n="habits.fieldDuration">المدة لكل جلسة (دقائق)</label>
+          <select id="m_duration" class="input">
+            <option value="15">15</option>
+            <option value="30" selected>30</option>
+            <option value="45">45</option>
+            <option value="60">60 — ساعة</option>
+            <option value="90">90</option>
+            <option value="120">120</option>
+          </select>
+          <div class="help" data-i18n="habits.fieldDurationHelp">الدقائق لكل جلسة (5-480)</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label data-i18n="habits.fieldTarget">المدة المستهدفة (أشهر)</label>
+          <select id="m_target" class="input">
+            <option value="1" selected>1 — شهر</option>
+            <option value="3">3</option>
+            <option value="6">6</option>
+            <option value="12">12</option>
+            <option value="24">24</option>
+          </select>
+          <div class="help" data-i18n="habits.fieldTargetHelp">كم شهراً للمتابعة؟ (1-36)</div>
+        </div>
+        <div>
+          <label>Icon & Color</label>
+          <div style="display:flex;gap:8px">
+            <input class="input" id="m_icon" placeholder="🔥" value="🔥" style="flex:0 0 70px">
+            <input class="input" id="m_color" type="color" value="#8b5cf6" style="flex:1;padding:4px">
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+        <button type="button" class="btn btn-ghost" onclick="closeHabitModal()" data-i18n="habits.cancel">إلغاء</button>
+        <button type="submit" class="btn btn-primary" data-i18n="habits.confirm">تأكيد وإنشاء</button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endblock %}
 {% block scripts %}
 <script src="/static/js/habits.js"></script>
