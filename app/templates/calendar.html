@@ -2,37 +2,138 @@
 {% block title %}Nemvai — Calendar{% endblock %}
 {% block head %}
 <style>
-.cal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:12px 0}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
-.cal-cell{min-height:110px;border:1px solid var(--border);border-radius:12px;background:#0f0f17;padding:8px;position:relative}
+/* Classic Journal / Notebook — gorgeous */
+.journal{
+  display:flex;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:var(--shadow);
+  margin-top:14px;
+}
+.journal-spine{
+  width:54px;
+  background:linear-gradient(90deg, #0f0f17, #1e1e2e);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;gap:16px;
+  padding:22px 0;
+  flex-shrink:0;
+}
+[data-theme="light"] .journal-spine{ background:linear-gradient(90deg,#e8e8ef,#f9f9ff); }
+.spiral{width:22px;height:22px;border-radius:50%;background:var(--bg);border:2px solid var(--border);box-shadow:inset 0 2px 6px rgba(0,0,0,.2), 0 1px 3px rgba(0,0,0,.2)}
+.journal-page{
+  flex:1;
+  background:
+    repeating-linear-gradient(transparent, transparent 31px, rgba(124,58,237,.06) 32px),
+    linear-gradient(180deg, var(--card), var(--card2));
+  padding:20px;
+}
+[data-theme="light"] .journal-page{ background: repeating-linear-gradient(transparent, transparent 31px, rgba(124,58,237,.05) 32px), linear-gradient(180deg,#ffffff,#fcfcff); }
+.journal-header{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:10px 12px;border:1px solid var(--border);border-radius:14px;
+  background:var(--bg);box-shadow:0 4px 12px rgba(0,0,0,.15);
+  font-family:'Cairo',serif;
+}
+.journal-title{font-size:1.35rem;font-weight:900;letter-spacing:.3px}
+.journal-subtitle{font-size:.75rem;color:var(--muted)}
+.cal-legend{display:flex;gap:10px;flex-wrap:wrap;margin:14px 2px;font-size:.75rem}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:8px}
+.cal-head-week{font-weight:800;font-size:.75rem;color:var(--muted);text-align:center;padding:6px 0;border-bottom:1px dashed var(--border)}
+.cal-cell{
+  min-height:108px;border:1px solid var(--border);border-radius:12px;
+  background:rgba(255,255,255,.02);padding:8px;position:relative;cursor:pointer;
+  transition:.15s;overflow:hidden;
+}
 [data-theme="light"] .cal-cell{ background:#ffffff; }
-.cal-cell.today{border-color:var(--primary);box-shadow:0 0 0 2px rgba(124,58,237,.25)}
-.cal-cell .day{font-weight:900;font-size:.9rem}
-.cal-task{font-size:.75rem;padding:4px 6px;border-radius:8px;background:#16161f;border:1px solid var(--border);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-cell:hover{transform:translateY(-1px);border-color:var(--primary);box-shadow:0 6px 16px rgba(124,58,237,.15)}
+.cal-cell.today{border-color:var(--primary);box-shadow:0 0 0 2px rgba(124,58,237,.2), 0 6px 16px rgba(124,58,237,.15)}
+.cal-cell.selected{outline:2px solid var(--primary);outline-offset:2px;background:linear-gradient(135deg, rgba(124,58,237,.12), transparent)}
+.cal-cell .day{font-weight:900;font-size:1rem;line-height:1}
+.cal-cell .day.today-num{color:var(--primary)}
+.cal-task{font-size:.72rem;padding:4px 6px;border-radius:8px;background:var(--card);border:1px solid var(--border);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 [data-theme="light"] .cal-task{ background:#f9f9ff; }
-.cal-task.high{border-color:rgba(239,68,68,.4)}
-.cal-legend{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.cal-task.high{border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.08)}
+.cal-task.done{opacity:.55;text-decoration:line-through}
+.date-diff{margin:10px 0;padding:10px 12px;border:1px dashed var(--border);border-radius:12px;background:var(--bg);font-weight:800;font-size:.85rem;display:inline-flex;gap:8px;align-items:center}
+.date-diff .badge{font-size:.75rem}
+.journal-detail{
+  margin-top:18px;
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:16px;
+  background-image: repeating-linear-gradient(transparent, transparent 27px, rgba(0,0,0,.04) 28px);
+}
+[data-theme="light"] .journal-detail{ background-color:#ffffff; }
+.journal-detail h3{margin:0 0 8px 0;font-family:'Cairo',serif}
+.task-row-mini{padding:10px;border:1px solid var(--border);border-radius:10px;margin-top:8px;background:var(--card);display:flex;gap:10px;align-items:center}
+[data-theme="light"] .task-row-mini{ background:#ffffff; }
+@media(max-width:700px){ .journal-spine{ display:none; } .cal-cell{ min-height:86px; } }
 </style>
 {% endblock %}
 {% block content %}
-<div class="cal-head">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:8px 0 4px 0">
   <h2 style="margin:0" data-i18n="calendar.title">🗓️ التقويم — عرض مستقل</h2>
-  <div style="display:flex;gap:8px;align-items:center">
-    <button class="btn btn-ghost" onclick="shiftMonth(-1)">‹</button>
-    <div id="calTitle" style="font-weight:900;min-width:160px;text-align:center"></div>
-    <button class="btn btn-ghost" onclick="shiftMonth(1)">›</button>
-    <button class="btn btn-primary" onclick="goToday()" data-i18n="calendar.today">اليوم</button>
+  <div class="muted" style="font-size:.8rem">Classic journal • Latin 2026</div>
+</div>
+
+<div class="journal">
+  <div class="journal-spine" aria-hidden="true">
+    <div class="spiral"></div><div class="spiral"></div><div class="spiral"></div><div class="spiral"></div><div class="spiral"></div><div class="spiral"></div><div class="spiral"></div>
   </div>
-</div>
-<div class="cal-legend muted">
-  <span><i class="cal-dot" style="background:var(--primary);display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:4px"></i> <span data-i18n="calendar.legendToday">اليوم</span></span>
-  <span><i class="cal-dot" style="background:#ef4444;display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:4px"></i> <span data-i18n="calendar.legendHigh">عاجل/مرتفع</span></span>
-  <span><i class="cal-dot" style="background:#06d6a0;display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:4px"></i> <span data-i18n="calendar.legendDone">مكتمل</span></span>
-</div>
-<div id="calGrid" class="cal-grid"></div>
-<div class="card" style="margin-top:14px">
-  <h3 style="margin:0 0 8px 0"><span data-i18n="calendar.tasksFor">مهام</span> <span id="calDayLabel">—</span></h3>
-  <div id="calDayTasks" class="muted" data-i18n="calendar.noTasks">اختر يوماً لعرض مهامه</div>
+  <div class="journal-page">
+    <div class="journal-header">
+      <div>
+        <div class="journal-title" id="calTitle">—</div>
+        <div class="journal-subtitle" id="calSubtitle">—</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-ghost" onclick="shiftMonth(-1)" aria-label="Prev">‹</button>
+        <button class="btn btn-primary" onclick="goToday()" data-i18n="calendar.today">اليوم</button>
+        <button class="btn btn-ghost" onclick="shiftMonth(1)" aria-label="Next">›</button>
+      </div>
+    </div>
+
+    <div class="cal-legend muted">
+      <span><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--primary);margin-left:6px"></i> <span data-i18n="calendar.legendToday">اليوم</span></span>
+      <span><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#ef4444;margin-left:6px"></i> <span data-i18n="calendar.legendHigh">عاجل/مرتفع</span></span>
+      <span><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#06d6a0;margin-left:6px"></i> <span data-i18n="calendar.legendDone">مكتمل</span></span>
+    </div>
+
+    <div id="calGrid" class="cal-grid"></div>
+
+    <!-- Date difference calculator -->
+    <div id="dateDiff" class="date-diff" style="display:none"></div>
+
+    <!-- Selected day detail — notebook page -->
+    <div class="journal-detail" id="dayDetail">
+      <h3><span data-i18n="calendar.tasksFor">مهام</span> <span id="calDayLabel">—</span></h3>
+      <div id="calDayTasks" class="muted">اختر يوماً لعرض مهامه</div>
+
+      <!-- Add task for selected date — interactive -->
+      <form id="calAddForm" onsubmit="addTaskForDate(event)" style="display:grid;gap:8px;margin-top:14px;padding:12px;border:1px dashed var(--border);border-radius:12px;background:var(--card)">
+        <div style="font-weight:800;font-size:.9rem" id="calAddTitle" data-i18n="calendar.addForDate">إضافة مهمة لـ —</div>
+        <input class="input" id="cal_task_title" data-i18n-placeholder="calendar.addPlaceholder" placeholder="مهمة جديدة لهذا التاريخ..." required>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <select id="cal_task_prio" class="select-sm" style="flex:1">
+            <option value="medium" data-i18n="todos.prioMedium">متوسط</option>
+            <option value="high" data-i18n="todos.prioHigh">مرتفع</option>
+            <option value="urgent" data-i18n="todos.prioUrgent">عاجل</option>
+            <option value="low" data-i18n="todos.prioLow">منخفض</option>
+          </select>
+          <select id="cal_task_cat" class="select-sm" style="flex:1">
+            <option value="personal" data-i18n="todos.catPersonal">شخصي</option>
+            <option value="work" data-i18n="todos.catWork">عمل</option>
+            <option value="study" data-i18n="todos.catStudy">دراسة</option>
+            <option value="health" data-i18n="todos.catHealth">صحة</option>
+          </select>
+          <button class="btn btn-primary" type="submit" data-i18n="calendar.addButton">إضافة</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 {% endblock %}
 {% block scripts %}

@@ -74,6 +74,13 @@ const NEMVAI_I18N = {
     "calendar.tasksFor": "Tasks for",
     "calendar.noTasks": "No tasks on this day",
     "calendar.weekdays": "Sun,Mon,Tue,Wed,Thu,Fri,Sat",
+    "calendar.diffToday": "Today",
+    "calendar.diffIn": "In {count} days",
+    "calendar.diffAgo": "{count} days ago",
+    "calendar.diffSelected": "Selected",
+    "calendar.addForDate": "Add task for {date}",
+    "calendar.addPlaceholder": "New task for this date...",
+    "calendar.addButton": "Add",
     // Habits
     "habits.title": "🔥 Habits — Rich Dashboard",
     "habits.subtitle": "Deep tracking: streaks, completion rates, daily log",
@@ -165,6 +172,13 @@ const NEMVAI_I18N = {
     "calendar.tasksFor": "Tâches du",
     "calendar.noTasks": "Pas de tâches ce jour",
     "calendar.weekdays": "Dim,Lun,Mar,Mer,Jeu,Ven,Sam",
+    "calendar.diffToday": "Aujourd'hui",
+    "calendar.diffIn": "Dans {count} jours",
+    "calendar.diffAgo": "Il y a {count} jours",
+    "calendar.diffSelected": "Sélectionné",
+    "calendar.addForDate": "Ajouter une tâche pour {date}",
+    "calendar.addPlaceholder": "Nouvelle tâche pour cette date...",
+    "calendar.addButton": "Ajouter",
     "habits.title": "🔥 Habitudes — Tableau Riche",
     "habits.subtitle": "Suivi profond : séries, taux, journal quotidien",
     "habits.statsTotal": "Total habitudes",
@@ -253,6 +267,13 @@ const NEMVAI_I18N = {
     "calendar.tasksFor": "مهام",
     "calendar.noTasks": "لا مهام في هذا اليوم",
     "calendar.weekdays": "أحد,اثنين,ثلاثاء,أربعاء,خميس,جمعة,سبت",
+    "calendar.diffToday": "اليوم",
+    "calendar.diffIn": "بعد {count} أيام",
+    "calendar.diffAgo": "منذ {count} أيام",
+    "calendar.diffSelected": "المحدد",
+    "calendar.addForDate": "إضافة مهمة لـ {date}",
+    "calendar.addPlaceholder": "مهمة جديدة لهذا التاريخ...",
+    "calendar.addButton": "إضافة",
     "habits.title": "🔥 العادات — لوحة غنية ومستقلة",
     "habits.subtitle": "تتبع عميق: سلاسل الإنجاز، نسب الإتمام، وسجل يومي مفصل",
     "habits.statsTotal": "إجمالي العادات",
@@ -288,8 +309,8 @@ function fmtDateLatin(dateStr){
   return dateStr;
 }
 function fmtMonthYearLatin(dateObj, lang){
-  // Month name via i18n, year via Latin
-  const year = dateObj.getFullYear().toLocaleString('en-US');
+  // Month name via i18n, year via Latin WITHOUT grouping (fix 2,026 -> 2026)
+  const year = dateObj.getFullYear().toLocaleString('en-US', {useGrouping:false});
   // Use en-US for month name base, but translate via dictionary for AR/FR
   const monthEn = dateObj.toLocaleString('en-US', {month:'long'});
   // Map monthEn to translated if needed — for now we use en-US month + Latin year, but for AR/FR we translate
